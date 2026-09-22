@@ -21,5 +21,28 @@
   <script src="./calc.js"></script>
   <script src="./store.js"></script>
   <script src="./app.js"></script>
+
+  <!-- Self-heal: if a stale/mixed service-worker cache white-screens the app,
+       purge caches + service workers and reload once (guarded against loops). -->
+  <script>
+    window.addEventListener("load", function () {
+      setTimeout(function () {
+        var app = document.getElementById("app");
+        if (!app || app.children.length > 0 || sessionStorage.getItem("forge-healed")) return;
+        sessionStorage.setItem("forge-healed", "1");
+        var reload = function () { location.reload(); };
+        var p = window.caches
+          ? caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })
+          : Promise.resolve();
+        p.then(function () {
+          if ("serviceWorker" in navigator) {
+            return navigator.serviceWorker.getRegistrations().then(function (rs) {
+              return Promise.all(rs.map(function (r) { return r.unregister(); }));
+            });
+          }
+        }).then(reload, reload);
+      }, 1500);
+    });
+  </script>
 </body>
 </html>
