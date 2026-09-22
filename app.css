@@ -142,7 +142,11 @@ nav a.active { color: var(--text); }
   padding: 10px 16px; border-radius: 999px; z-index: 60;
   display: flex; gap: 12px; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,.4);
 }
-.rest-banner button { background: rgba(255,255,255,.2); border: none; color: #fff; }
+.rest-banner .rest-adj { background: rgba(255,255,255,.2); border: none; color: #fff; padding: 6px 10px; border-radius: 999px; font-size: 13px; }
+.rest-mid { display: flex; flex-direction: column; gap: 4px; min-width: 120px; }
+.rest-time { text-align: center; font-variant-numeric: tabular-nums; }
+.rest-bar { height: 5px; border-radius: 999px; background: rgba(255,255,255,.25); overflow: hidden; }
+.rest-bar-fill { height: 100%; background: #fff; border-radius: 999px; transition: width .3s linear; }
 
 /* dashboard bits */
 .date-strip { margin: 4px 0 12px; }

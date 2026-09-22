@@ -230,15 +230,29 @@
   }
 
   // ---- active workout ----
+  function timeOfDayName() {
+    const h = new Date().getHours();
+    if (h < 12) return "Morning Workout";
+    if (h < 17) return "Afternoon Workout";
+    if (h < 21) return "Evening Workout";
+    return "Night Workout";
+  }
   function startWorkout(routineId, date) {
     const entries = [];
+    let name = timeOfDayName();
     if (routineId) {
       const r = state.routines.find(x => x.id === routineId);
-      if (r) r.exerciseIds.forEach(eid => entries.push(newEntry(eid)));
+      if (r) { r.exerciseIds.forEach(eid => entries.push(newEntry(eid))); name = r.name; }
     }
-    state.active = { id: uid(), name: "Workout", date: date || dayKey(), start: Date.now(), end: null, entries };
+    state.active = { id: uid(), name, date: date || dayKey(), start: Date.now(), end: null, entries };
     save();
     return state.active;
+  }
+  // Save the live session's exercises as a reusable routine.
+  function saveActiveAsRoutine(name) {
+    if (!state.active) return null;
+    const ids = state.active.entries.map(e => e.exerciseId);
+    return addRoutine({ name: name || state.active.name || "Routine", exerciseIds: ids });
   }
   // Smart logging: a new exercise mirrors your last session for it (values
   // pre-filled but not marked done), so you rarely change them. — Iron's signature.
@@ -511,7 +525,7 @@
     MUSCLES, STARTER_PLANS, dayKey, get, settings, setSetting, goals, setGoal,
     exercises, exercise, addExercise, updateExercise, deleteExercise, cloneExercise,
     routines, addRoutine, deleteRoutine, addStarterPlan, routineToCode, routineFromCode,
-    active, startWorkout, addEntry, removeEntry, moveEntry, setEntryNote,
+    active, startWorkout, saveActiveAsRoutine, addEntry, removeEntry, moveEntry, setEntryNote,
     addSet, updateSet, removeSet,
     finishWorkout, discardWorkout, renameActive, workouts, deleteWorkout, reopenWorkout, workoutsByDate,
     bodyweights, addBodyweight, deleteBodyweight, convertUnits,

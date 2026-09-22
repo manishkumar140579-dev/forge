@@ -138,6 +138,12 @@
     if (ins.length) h += `<div class="card"><h2>Insights</h2>${ins.map(i => `<p class="muted" style="margin:4px 0">• ${esc(i)}</p>`).join("")}</div>`;
     return h;
   }
+  function daysSinceLastWorkout() {
+    const ws = Store.workouts();
+    if (!ws.length) return null;
+    const last = ws.map(w => w.date).sort().pop();
+    return Math.round((new Date(Store.dayKey() + "T00:00:00") - new Date(last + "T00:00:00")) / 86400000);
+  }
   function insights(g, macros, kcal, water, wos) {
     const out = [];
     const pRem = Math.round(g.protein - macros.p);
@@ -145,8 +151,19 @@
     if (kcal > g.calories) out.push(`${kcal - g.calories} kcal over your goal.`);
     if (water < g.water) out.push(`${g.water - water} more glass${g.water - water !== 1 ? "es" : ""} of water.`);
     if (!wos.length && curDate === Store.dayKey()) out.push("No workout logged yet today.");
+    const dsl = daysSinceLastWorkout();
+    if (dsl != null && dsl >= 2) out.push(`It's been ${dsl} days since your last workout.`);
     if (Store.streak() >= 3) out.push(`${Store.streak()}-day streak — keep it going!`);
     return out;
+  }
+  function topPRs() {
+    const ws = Store.workouts();
+    return Store.exercises()
+      .filter(x => (x.kind || "weight") === "weight")
+      .map(x => ({ name: x.name, oneRM: Math.round(Calc.personalRecords(ws, x.id).best1RM) }))
+      .filter(r => r.oneRM > 0)
+      .sort((a, b) => b.oneRM - a.oneRM)
+      .slice(0, 10);
   }
 
   // ---------- TRAIN (hub) ----------
@@ -407,6 +424,13 @@
         </div>`;
     }
     h += `</div>`;
+
+    const prs = topPRs();
+    if (prs.length) {
+      h += `<div class="card"><h2>Top PRs</h2>` + prs.map((r, i) =>
+        `<div class="list-item"><div><strong>${i + 1}. ${esc(r.name)}</strong></div>
+          <span class="tag">${r.oneRM} ${u} 1RM</span></div>`).join("") + `</div>`;
+    }
     return h;
   }
 
@@ -451,8 +475,10 @@
     });
 
     h += `<button class="btn-blue btn-full" data-action="add-exercise">＋ Add exercise</button>
-      <div class="spacer"></div>
-      <button class="btn-accent btn-full" data-action="finish">✓ Finish workout</button>
+      <div class="spacer"></div>`;
+    if (a.entries.length) h += `<button class="btn-full btn-ghost" data-action="save-as-routine">💾 Save as routine</button>
+      <div class="spacer"></div>`;
+    h += `<button class="btn-accent btn-full" data-action="finish">✓ Finish workout</button>
       <div class="spacer"></div>
       <button class="btn-full btn-ghost btn-danger" data-action="discard">Discard</button>`;
     return h;
@@ -630,6 +656,13 @@
       case "discard": if (confirm("Discard this workout? Nothing will be saved.")) { Store.discardWorkout(); stopRest(); go("home"); } return;
 
       case "rest-stop": return stopRest();
+      case "rest-minus": return adjustRest(-15);
+      case "rest-plus": return adjustRest(15);
+      case "save-as-routine": {
+        const name = prompt("Save these exercises as a routine named:", active ? active.name : "My Routine");
+        if (name) { Store.saveActiveAsRoutine(name); alert("Routine saved — find it under Train / Routines."); }
+        return;
+      }
 
       case "export": return exportData();
       case "export-csv": return exportCSVFile();
@@ -1060,25 +1093,60 @@
   }
 
   // ---------- rest timer (survives re-renders via its own element) ----------
-  let rest = { id: null, remaining: 0 };
+  let rest = { id: null, remaining: 0, total: 0 };
+  let _ac = null;
+  function audioCtx() {
+    if (!_ac) { const C = window.AudioContext || window.webkitAudioContext; if (C) _ac = new C(); }
+    if (_ac && _ac.state === "suspended") _ac.resume().catch(() => {});
+    return _ac;
+  }
+  function beep() {
+    const ac = audioCtx();
+    if (!ac) return;
+    const tone = (freq, at, dur) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = "sine"; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.001, ac.currentTime + at);
+      g.gain.exponentialRampToValueAtTime(0.25, ac.currentTime + at + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + at + dur);
+      o.connect(g); g.connect(ac.destination);
+      o.start(ac.currentTime + at); o.stop(ac.currentTime + at + dur + 0.02);
+    };
+    try { tone(880, 0, 0.15); tone(1175, 0.18, 0.22); } catch (_) {}
+  }
   function startRest(sec) {
     stopRest();
+    audioCtx();                 // unlock audio during the tap gesture so the beep can fire later
     rest.remaining = sec | 0;
+    rest.total = rest.remaining;
     if (rest.remaining <= 0) return;
     rest.id = setInterval(() => {
       rest.remaining--;
-      if (rest.remaining <= 0) { stopRest(); if (navigator.vibrate) navigator.vibrate(400); notify("Rest done", "Time for your next set 💪"); }
-      renderRest();
+      if (rest.remaining <= 0) { stopRest(); if (navigator.vibrate) navigator.vibrate([200, 100, 200]); beep(); notify("Rest done", "Time for your next set 💪"); }
+      else renderRest();
     }, 1000);
     renderRest();
   }
-  function stopRest() { if (rest.id) clearInterval(rest.id); rest.id = null; rest.remaining = 0; renderRest(); }
+  function adjustRest(delta) {
+    if (!rest.id) return;
+    rest.remaining = Math.max(0, rest.remaining + delta);
+    if (rest.remaining > rest.total) rest.total = rest.remaining;
+    if (rest.remaining <= 0) stopRest(); else renderRest();
+  }
+  function stopRest() { if (rest.id) clearInterval(rest.id); rest.id = null; rest.remaining = 0; rest.total = 0; renderRest(); }
   function renderRest() {
     let el = document.getElementById("rest");
     if (!rest.id) { if (el) el.remove(); return; }
     if (!el) { el = document.createElement("div"); el.id = "rest"; el.className = "rest-banner"; document.body.appendChild(el); }
     const m = Math.floor(rest.remaining / 60), s = rest.remaining % 60;
-    el.innerHTML = `⏱ ${m}:${String(s).padStart(2, "0")} <button class="btn-sm" data-action="rest-stop">Skip</button>`;
+    const pct = rest.total ? (rest.remaining / rest.total) * 100 : 0;
+    el.innerHTML = `<button class="rest-adj" data-action="rest-minus" aria-label="minus 15 seconds">−15</button>
+      <div class="rest-mid">
+        <div class="rest-time">⏱ ${m}:${String(s).padStart(2, "0")}</div>
+        <div class="rest-bar"><div class="rest-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
+      </div>
+      <button class="rest-adj" data-action="rest-plus" aria-label="plus 15 seconds">+15</button>
+      <button class="rest-adj" data-action="rest-stop" aria-label="skip rest">✕</button>`;
   }
   function notify(title, body) {
     if (!("Notification" in window)) return;
