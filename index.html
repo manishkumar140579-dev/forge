@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  <link rel="icon" href="./icon.svg">
+  <link rel="stylesheet" href="./app.css">
+  <title>Forge — Workout Tracker</title>
+</head>
+<body>
+  <main id="app"></main>
+  <dialog id="modal"></dialog>
+
+  <!-- classic scripts share global scope; loaded in order. No build step. -->
+  <script src="./qrcode.js"></script>
+  <script src="./calc.js"></script>
+  <script src="./store.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
