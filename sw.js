@@ -1,5 +1,5 @@
 // sw.js — cache-first offline shell. Bump CACHE to ship an update.
-const CACHE = "forge-v3";
+const CACHE = "forge-v4";
 const ASSETS = [
   "./", "./index.html", "./app.css",
   "./qrcode.js", "./calc.js", "./store.js", "./app.js",
@@ -18,12 +18,31 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET") return;
+  const req = e.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  // Cross-origin (e.g. Open Food Facts API) → straight to network, never cached.
+  if (url.origin !== location.origin) return;
+
+  // Navigations: network-first so a new deploy shows without a hard refresh.
+  if (req.mode === "navigate") {
+    e.respondWith(
+      fetch(req).then(res => {
+        caches.open(CACHE).then(c => c.put(req, res.clone())).catch(() => {});
+        return res;
+      }).catch(() => caches.match(req).then(r => r || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // Same-origin assets: stale-while-revalidate (fast, but refreshes in background).
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-      return res;
-    }).catch(() => caches.match("./index.html")))
+    caches.match(req).then(hit => {
+      const net = fetch(req).then(res => {
+        caches.open(CACHE).then(c => c.put(req, res.clone())).catch(() => {});
+        return res;
+      }).catch(() => hit);
+      return hit || net;
+    })
   );
 });

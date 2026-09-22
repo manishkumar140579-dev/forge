@@ -1,7 +1,8 @@
-# Forge — Workout Tracker
+# Forge — Training & Nutrition Tracker
 
-A fast, offline-first weightlifting tracker. Plain HTML/CSS/JS — **no build step,
-no framework, no dependencies.** Installable as an app (PWA) on phone and desktop.
+A fast, offline-first workout **and nutrition** tracker. Plain HTML/CSS/JS — **no
+build step, no framework, no dependencies** (one small vendored QR lib). Installable
+as an app (PWA) on phone and desktop.
 
 Built as a **clean-room** app: inspired by the concepts in the GPL project "Iron"
 (exercises, sets, routines, history), but written from scratch. No GPL code was
@@ -76,6 +77,21 @@ Netlify / Vercel / Cloudflare Pages.
 
 ## Features
 
+**Today dashboard & nutrition** (Ironlog spec)
+- **Today** — calorie ring (in / burned / remaining, net), macro bars, water tracker,
+  training summary, 🔥 streak, rule-based insight lines.
+- **Any-day logging** — move between dates (Today / Yesterday / date) for food, water,
+  training and body weight.
+- **Fuel** — meals (Breakfast / Lunch / Dinner / Snacks / Pre- / Post-Workout), day &
+  per-meal totals with macro breakdown.
+- **Food search** against **Open Food Facts** (free, no key) + instant search of your
+  saved foods; **barcode scan** (camera where supported) + manual barcode number;
+  **portion scaling** by grams; **manual/custom foods** saved to a reusable library.
+- **Goals** — editable calories / protein / carbs / fat / water.
+- **Smart logging** (Iron's signature) — a new exercise auto-fills from your last
+  session's sets, so you rarely change the values.
+- **85 exercises** across 6 muscle groups + cardio.
+
 **Logging**
 - Start empty or from a routine; fast typing + quick ± buttons; one reliable finish.
 - **Set types** — normal / warmup / drop / failure (tap the set number to cycle);
@@ -103,11 +119,18 @@ Netlify / Vercel / Cloudflare Pages.
 - Backup **export/import JSON**, **export CSV**.
 - **PWA** — installable (PNG + SVG icons), offline, one device.
 
-## Not included (need infrastructure Forge can't provide alone)
+## Iron issues & PRs — all addressed
 
-- **Cloud sync / multi-device accounts** — needs a hosted backend. Data is
-  per-device `localStorage` today. To add: swap `store.js`'s `load()`/`save()` for a
-  backend/IndexedDB — nothing else touches storage.
-- **Apple Health / HealthKit & wearables** — not reachable from a pure web app.
-  Wrap Forge with [Capacitor](https://capacitorjs.com) to ship it as a native iOS/Android
-  app with Health access; all data is plain JSON and `calc.js` exposes the math.
+Every actionable issue from `karimknaebel/Iron` (#8, #9, #10, #11, #13, #14, #16,
+#17, #18, #19, #20) and the one open PR (#6 warm-up tag) is handled — see the table
+above and the **set types** feature. #12 ("Thanks!") isn't actionable.
+
+## Not included (impossible in a pure web app — need native iOS)
+
+These are from Iron's native side and cannot run in a browser PWA:
+
+- **Apple Watch app, Siri Shortcuts, home-screen widget, iCloud sync, HealthKit** —
+  all require a native iOS build. Wrap Forge with [Capacitor](https://capacitorjs.com)
+  to ship it natively and add these; all data is plain JSON and `calc.js` exposes the math.
+- **Cloud sync / multi-device accounts** — needs a hosted backend. Data is per-device
+  `localStorage` today; swap `store.js`'s `load()`/`save()` for a backend to add it.

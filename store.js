@@ -20,59 +20,134 @@
       id: uid(), name, muscle, category, kind: kind || "weight", custom: false, notes: "",
     });
     return [
+      // Chest
       e("Bench Press", "Chest", "Barbell"),
       e("Incline Bench Press", "Chest", "Barbell"),
+      e("Decline Bench Press", "Chest", "Barbell"),
       e("Dumbbell Press", "Chest", "Dumbbell"),
+      e("Incline Dumbbell Press", "Chest", "Dumbbell"),
+      e("Dumbbell Fly", "Chest", "Dumbbell"),
       e("Cable Fly", "Chest", "Cable"),
+      e("Pec Deck", "Chest", "Machine"),
+      e("Chest Press Machine", "Chest", "Machine"),
       e("Push Up", "Chest", "Bodyweight", "bodyweight"),
+      e("Dips", "Chest", "Bodyweight", "bodyweight"),
+      // Back
       e("Deadlift", "Back", "Barbell"),
       e("Barbell Row", "Back", "Barbell"),
+      e("Pendlay Row", "Back", "Barbell"),
+      e("T-Bar Row", "Back", "Machine"),
       e("Lat Pulldown", "Back", "Cable"),
-      e("Pull Up", "Back", "Bodyweight", "bodyweight"),
       e("Seated Cable Row", "Back", "Cable"),
+      e("Straight-Arm Pulldown", "Back", "Cable"),
+      e("Pull Up", "Back", "Bodyweight", "bodyweight"),
+      e("Chin Up", "Back", "Bodyweight", "bodyweight"),
+      e("Dumbbell Row", "Back", "Dumbbell"),
+      e("Rack Pull", "Back", "Barbell"),
+      e("Hyperextension", "Back", "Bodyweight", "bodyweight"),
+      // Shoulders
       e("Overhead Press", "Shoulders", "Barbell"),
+      e("Seated Dumbbell Press", "Shoulders", "Dumbbell"),
+      e("Arnold Press", "Shoulders", "Dumbbell"),
       e("Lateral Raise", "Shoulders", "Dumbbell"),
+      e("Cable Lateral Raise", "Shoulders", "Cable"),
+      e("Front Raise", "Shoulders", "Dumbbell"),
+      e("Rear Delt Fly", "Shoulders", "Dumbbell"),
       e("Face Pull", "Shoulders", "Cable"),
+      e("Upright Row", "Shoulders", "Barbell"),
+      e("Barbell Shrug", "Shoulders", "Barbell"),
+      e("Machine Shoulder Press", "Shoulders", "Machine"),
+      // Legs
       e("Squat", "Legs", "Barbell"),
       e("Front Squat", "Legs", "Barbell"),
+      e("Hack Squat", "Legs", "Machine"),
       e("Leg Press", "Legs", "Machine"),
       e("Romanian Deadlift", "Legs", "Barbell"),
+      e("Stiff-Leg Deadlift", "Legs", "Barbell"),
+      e("Bulgarian Split Squat", "Legs", "Dumbbell"),
+      e("Lunge", "Legs", "Dumbbell"),
+      e("Goblet Squat", "Legs", "Dumbbell"),
       e("Leg Curl", "Legs", "Machine"),
       e("Leg Extension", "Legs", "Machine"),
       e("Calf Raise", "Legs", "Machine"),
+      e("Seated Calf Raise", "Legs", "Machine"),
+      e("Hip Thrust", "Legs", "Barbell"),
+      e("Glute Bridge", "Legs", "Bodyweight", "bodyweight"),
+      // Arms
       e("Barbell Curl", "Arms", "Barbell"),
+      e("EZ-Bar Curl", "Arms", "Barbell"),
       e("Dumbbell Curl", "Arms", "Dumbbell"),
+      e("Hammer Curl", "Arms", "Dumbbell"),
+      e("Preacher Curl", "Arms", "Machine"),
+      e("Concentration Curl", "Arms", "Dumbbell"),
+      e("Cable Curl", "Arms", "Cable"),
       e("Triceps Pushdown", "Arms", "Cable"),
       e("Triceps Extension", "Arms", "Cable"),
-      e("Hammer Curl", "Arms", "Dumbbell"),
+      e("Overhead Triceps Extension", "Arms", "Dumbbell"),
+      e("Skullcrusher", "Arms", "Barbell"),
+      e("Close-Grip Bench Press", "Arms", "Barbell"),
+      e("Bench Dip", "Arms", "Bodyweight", "bodyweight"),
+      e("Wrist Curl", "Arms", "Dumbbell"),
+      // Core
       e("Plank", "Core", "Bodyweight", "time"),
+      e("Side Plank", "Core", "Bodyweight", "time"),
       e("Hanging Leg Raise", "Core", "Bodyweight", "bodyweight"),
       e("Cable Crunch", "Core", "Cable"),
+      e("Crunch", "Core", "Bodyweight", "bodyweight"),
+      e("Sit Up", "Core", "Bodyweight", "bodyweight"),
+      e("Russian Twist", "Core", "Bodyweight", "bodyweight"),
+      e("Ab Wheel", "Core", "Bodyweight", "bodyweight"),
+      e("Mountain Climber", "Core", "Bodyweight", "bodyweight"),
+      e("Dead Bug", "Core", "Bodyweight", "bodyweight"),
+      // Cardio / Other
       e("Running", "Other", "Cardio", "distance"),
       e("Cycling", "Other", "Cardio", "distance"),
+      e("Rowing", "Other", "Cardio", "distance"),
+      e("Walking", "Other", "Cardio", "distance"),
+      e("Swimming", "Other", "Cardio", "distance"),
+      e("Jump Rope", "Other", "Cardio", "time"),
+      e("Elliptical", "Other", "Cardio", "time"),
+      e("Stair Climber", "Other", "Cardio", "time"),
     ];
   }
+
+  const DEFAULT_GOALS = { calories: 2200, protein: 150, carbs: 220, fat: 70, water: 8 };
 
   function fresh() {
     return {
       settings: { unit: "kg", restDefault: 90, increment: 2.5, theme: "dark" },
+      goals: { ...DEFAULT_GOALS },
       exercises: seedExercises(),
       routines: [],
-      workouts: [],     // finished workouts, newest first
+      workouts: [],     // finished workouts, newest first (each has .date "YYYY-MM-DD")
       bodyweights: [],  // [{date, value}] oldest → newest
+      foodLog: [],      // [{id, date, meal, name, grams, per100:{kcal,p,c,f}}]
+      foodLibrary: [],  // reusable saved foods [{id, name, per100, serving}]
+      water: {},        // { "YYYY-MM-DD": glasses }
       active: null,     // the in-progress workout, or null
     };
+  }
+
+  // Local date key "YYYY-MM-DD" (device timezone).
+  function dayKey(ts) {
+    const d = ts == null ? new Date() : new Date(ts);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
 
   // Backfill fields added in later versions so old saves keep working.
   function normalize(s) {
     s.settings = Object.assign({ unit: "kg", restDefault: 90, increment: 2.5, theme: "dark" }, s.settings || {});
+    s.goals = Object.assign({ ...DEFAULT_GOALS }, s.goals || {});
     s.exercises = s.exercises || seedExercises();
     s.routines = s.routines || [];
     s.workouts = s.workouts || [];
     s.bodyweights = s.bodyweights || [];
+    s.foodLog = s.foodLog || [];
+    s.foodLibrary = s.foodLibrary || [];
+    s.water = s.water || {};
     if (!("active" in s)) s.active = null;
     s.exercises.forEach(x => { if (!x.kind) x.kind = "weight"; });
+    s.workouts.forEach(w => { if (!w.date) w.date = dayKey(w.end || w.start); });
     const fixEntry = (e) => {
       if (!("note" in e)) e.note = "";
       if (!e.kind) { const ex = s.exercises.find(y => y.id === e.exerciseId); e.kind = ex ? ex.kind : "weight"; }
@@ -155,20 +230,33 @@
   }
 
   // ---- active workout ----
-  function startWorkout(routineId) {
+  function startWorkout(routineId, date) {
     const entries = [];
     if (routineId) {
       const r = state.routines.find(x => x.id === routineId);
       if (r) r.exerciseIds.forEach(eid => entries.push(newEntry(eid)));
     }
-    state.active = { id: uid(), name: "Workout", start: Date.now(), end: null, entries };
+    state.active = { id: uid(), name: "Workout", date: date || dayKey(), start: Date.now(), end: null, entries };
     save();
     return state.active;
   }
+  // Smart logging: a new exercise mirrors your last session for it (values
+  // pre-filled but not marked done), so you rarely change them. — Iron's signature.
   function newEntry(exerciseId) {
     const ex = exercise(exerciseId) || {};
     const kind = ex.kind || "weight";
-    return { exerciseId, kind, note: "", sets: [newSet(kind)] };
+    const last = lastPerformance(exerciseId);
+    let sets;
+    if (last && last.sets.length) {
+      sets = last.sets.map(s => {
+        const ns = newSet(kind);
+        ["weight", "reps", "seconds", "distance"].forEach(f => { if (f in ns && f in s) ns[f] = s[f]; });
+        return ns;
+      });
+    } else {
+      sets = [newSet(kind)];
+    }
+    return { exerciseId, kind, note: "", sets };
   }
   function newSet(kind) {
     const s = { done: false, type: "normal", rpe: "" };
@@ -355,6 +443,61 @@
     return rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
   }
 
+  // ---- goals ----
+  function goals() { return state.goals; }
+  function setGoal(k, v) { state.goals[k] = +v || 0; save(); }
+
+  // ---- food log ----
+  function foodByDate(date) { return state.foodLog.filter(f => f.date === date); }
+  function addFood({ date, meal, name, grams, per100 }) {
+    const p = per100 || {};
+    const f = {
+      id: uid(), date, meal, name: (name || "Food").trim(), grams: +grams || 0,
+      per100: { kcal: +p.kcal || 0, p: +p.p || 0, c: +p.c || 0, f: +p.f || 0 },
+    };
+    state.foodLog.push(f);
+    save();
+    return f;
+  }
+  function removeFood(id) { state.foodLog = state.foodLog.filter(f => f.id !== id); save(); }
+
+  // ---- reusable food library ----
+  function foodLibrary() { return state.foodLibrary; }
+  function saveFood({ name, per100, serving }) {
+    const existing = state.foodLibrary.find(x => x.name.toLowerCase() === (name || "").toLowerCase());
+    if (existing) { existing.per100 = per100; if (serving) existing.serving = serving; save(); return existing; }
+    const f = { id: uid(), name: (name || "Food").trim(), per100, serving: serving || 100 };
+    state.foodLibrary.push(f);
+    save();
+    return f;
+  }
+  function deleteLibraryFood(id) { state.foodLibrary = state.foodLibrary.filter(f => f.id !== id); save(); }
+  function searchLibrary(q) {
+    q = (q || "").toLowerCase();
+    if (!q) return state.foodLibrary.slice(0, 20);
+    return state.foodLibrary.filter(f => f.name.toLowerCase().includes(q)).slice(0, 20);
+  }
+
+  // ---- water ----
+  function getWater(date) { return state.water[date] || 0; }
+  function setWater(date, n) { state.water[date] = Math.max(0, n | 0); save(); }
+  function addWater(date, delta) { setWater(date, getWater(date) + delta); }
+
+  // ---- activity / streak ----
+  function workoutsByDate(date) { return state.workouts.filter(w => w.date === date); }
+  function dayHasActivity(date) {
+    return state.workouts.some(w => w.date === date)
+      || state.foodLog.some(f => f.date === date)
+      || (state.water[date] > 0)
+      || state.bodyweights.some(b => dayKey(b.date) === date);
+  }
+  function streak() {
+    let n = 0;
+    const d = new Date();
+    while (dayHasActivity(dayKey(d.getTime()))) { n++; d.setDate(d.getDate() - 1); }
+    return n;
+  }
+
   function exportJSON() { return JSON.stringify(state, null, 2); }
   function importJSON(text) {
     const parsed = JSON.parse(text);
@@ -365,13 +508,15 @@
   function reset() { state = fresh(); save(); }
 
   root.Store = {
-    MUSCLES, STARTER_PLANS, get, settings, setSetting,
+    MUSCLES, STARTER_PLANS, dayKey, get, settings, setSetting, goals, setGoal,
     exercises, exercise, addExercise, updateExercise, deleteExercise, cloneExercise,
     routines, addRoutine, deleteRoutine, addStarterPlan, routineToCode, routineFromCode,
     active, startWorkout, addEntry, removeEntry, moveEntry, setEntryNote,
     addSet, updateSet, removeSet,
-    finishWorkout, discardWorkout, renameActive, workouts, deleteWorkout, reopenWorkout,
+    finishWorkout, discardWorkout, renameActive, workouts, deleteWorkout, reopenWorkout, workoutsByDate,
     bodyweights, addBodyweight, deleteBodyweight, convertUnits,
+    foodByDate, addFood, removeFood, foodLibrary, saveFood, deleteLibraryFood, searchLibrary,
+    getWater, setWater, addWater, dayHasActivity, streak,
     lastPerformance, exportJSON, exportCSV, importJSON, reset,
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

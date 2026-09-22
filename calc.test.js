@@ -65,4 +65,16 @@ assert.strictEqual(prs[0].exerciseId, "sq");
 assert.deepStrictEqual(C.platesPerSide(100, 20, [25, 20, 15, 10, 5, 2.5]), [25, 15]);
 assert.deepStrictEqual(C.platesPerSide(20, 20, [25, 20, 15]), []); // just the bar
 
+// nutrition: 200g of a food at 150kcal/100g, 10P/20C/5F per 100g
+const food = [{ grams: 200, per100: { kcal: 150, p: 10, c: 20, f: 5 } }];
+const m = C.dayMacros(food);
+assert.strictEqual(m.kcal, 300);
+assert.strictEqual(m.p, 20);
+assert.strictEqual(m.c, 40);
+assert.strictEqual(m.f, 10);
+assert.strictEqual(C.dayMacros([]).kcal, 0);
+
+// calories burned from volume is a stable multiple
+assert.strictEqual(C.caloriesBurned(10000), 300);
+
 console.log("ok — all calc checks passed");

@@ -12,22 +12,28 @@
   const fmtTime = (ts) => new Date(ts).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   const num = (v) => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
 
-  const routes = ["home", "exercises", "history", "routines", "stats", "settings", "workout"];
+  const routes = ["today", "train", "fuel", "more", "exercises", "history", "routines", "stats", "settings", "workout"];
   const route = () => {
-    const r = (location.hash.replace(/^#\/?/, "") || "home").split("/")[0];
-    return routes.includes(r) ? r : "home";
+    const r = (location.hash.replace(/^#\/?/, "") || "today").split("/")[0];
+    return routes.includes(r) ? r : "today";
   };
   const go = (r) => { location.hash = "#/" + r; };
+  let curDate = Store.dayKey();
 
   // ---------- shell + nav ----------
   const NAV = [
-    ["home", "🏠", "Home"],
-    ["exercises", "🏋️", "Exercises"],
-    ["history", "📖", "History"],
-    ["routines", "📋", "Routines"],
-    ["stats", "📈", "Stats"],
-    ["settings", "⚙️", "Settings"],
+    ["today", "🏠", "Today"],
+    ["train", "🏋️", "Train"],
+    ["fuel", "🍎", "Fuel"],
+    ["stats", "📈", "Progress"],
+    ["more", "⋯", "More"],
   ];
+  // which tab lights up for a given route
+  function navActive(r) {
+    if (r === "workout") return "train";
+    if (["exercises", "routines", "history", "settings"].includes(r)) return "more";
+    return r;
+  }
   function navHTML(cur) {
     return `<nav>${NAV.map(([r, i, l]) =>
       `<a href="#/${r}" class="${cur === r ? "active" : ""}"><span class="ico">${i}</span>${l}</a>`
@@ -38,7 +44,10 @@
   function render() {
     const r = route();
     let html;
-    if (r === "home") html = viewHome();
+    if (r === "today") html = viewToday();
+    else if (r === "train") html = Store.active() ? viewWorkout() : viewTrain();
+    else if (r === "fuel") html = viewFuel();
+    else if (r === "more") html = viewMore();
     else if (r === "exercises") html = viewExercises();
     else if (r === "history") html = viewHistory();
     else if (r === "routines") html = viewRoutines();
@@ -47,42 +56,156 @@
     else if (r === "workout") html = viewWorkout();
     appEl.innerHTML = html;
     document.querySelectorAll("nav").forEach(n => n.remove());
-    document.body.insertAdjacentHTML("beforeend", navHTML(r === "workout" ? "home" : r));
+    document.body.insertAdjacentHTML("beforeend", navHTML(navActive(r)));
     wireInputs();
     renderRest();
   }
 
-  // ---------- HOME ----------
-  function viewHome() {
-    const a = Store.active();
-    const ws = Store.workouts();
-    const totalVol = ws.reduce((s, w) => s + Calc.workoutVolume(w.entries), 0);
-    let h = `<h1>Forge</h1><p class="muted">Log a workout. Fast.</p><div class="spacer"></div>`;
-
-    if (a) {
-      const sets = Calc.completedSets(a.entries);
-      h += `<div class="card">
-        <div class="row between"><h2>Workout in progress</h2><span class="tag">${a.entries.length} exercises</span></div>
-        <p class="muted">${sets} sets done · started ${fmtTime(a.start)}</p>
-        <button class="btn-accent btn-full" data-action="resume">Resume workout →</button>
-      </div>`;
-    } else {
-      h += `<button class="btn-accent btn-full" data-action="start-empty">＋ Start empty workout</button>`;
-      const rs = Store.routines();
-      if (rs.length) {
-        h += `<div class="spacer"></div><h2>Start from a routine</h2>`;
-        h += rs.map(rt => `<div class="card row between">
-          <div><strong>${esc(rt.name)}</strong><br><span class="muted">${rt.exerciseIds.length} exercises</span></div>
-          <button class="btn-blue" data-action="start-routine" data-id="${rt.id}">Start</button>
-        </div>`).join("");
-      }
-    }
-
-    h += `<div class="spacer"></div><div class="card row between">
-      <div><span class="muted">Workouts</span><br><strong style="font-size:22px">${ws.length}</strong></div>
-      <div><span class="muted">Total volume</span><br><strong style="font-size:22px">${Math.round(totalVol).toLocaleString()} ${unit()}</strong></div>
+  // ---------- date navigation (any-day logging) ----------
+  const MEALS = ["Breakfast", "Lunch", "Dinner", "Snacks", "Pre-Workout", "Post-Workout"];
+  function dateLabel(key) {
+    const t = Store.dayKey();
+    const yd = new Date(); yd.setDate(yd.getDate() - 1);
+    if (key === t) return "Today";
+    if (key === Store.dayKey(yd.getTime())) return "Yesterday";
+    return new Date(key + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  }
+  function dateStrip() {
+    const atToday = curDate >= Store.dayKey();
+    return `<div class="row between date-strip">
+      <button class="btn-sm btn-ghost" data-action="date-prev" aria-label="previous day">‹</button>
+      <button class="btn-sm btn-ghost" data-action="date-today"><strong>${dateLabel(curDate)}</strong></button>
+      <button class="btn-sm btn-ghost" data-action="date-next" aria-label="next day" ${atToday ? "disabled" : ""}>›</button>
     </div>`;
+  }
+
+  // ---------- small chart bits ----------
+  function ring(pct, big, sub) {
+    const r = 52, c = 2 * Math.PI * r, off = c * (1 - Math.min(1, Math.max(0, pct)));
+    return `<svg viewBox="0 0 140 140" width="140" height="140" style="display:block;margin:0 auto">
+      <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--border)" stroke-width="12"/>
+      <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round"
+        stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 70 70)"/>
+      <text x="70" y="68" text-anchor="middle" font-size="26" fill="var(--text)" font-weight="700">${big}</text>
+      <text x="70" y="90" text-anchor="middle" font-size="11" fill="var(--muted)">${sub}</text>
+    </svg>`;
+  }
+  function macroBar(name, val, goal, color) {
+    const pct = goal ? Math.min(100, (val / goal) * 100) : 0;
+    return `<div style="margin:8px 0">
+      <div class="row between" style="font-size:13px"><span>${name}</span><span class="muted">${Math.round(val)} / ${goal} g</span></div>
+      <div class="bar"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }
+
+  // ---------- TODAY (dashboard) ----------
+  function viewToday() {
+    const g = Store.goals(), u = unit();
+    const food = Store.foodByDate(curDate);
+    const macros = Calc.dayMacros(food);
+    const kcal = Math.round(macros.kcal);
+    const remaining = Math.round(g.calories - kcal);
+    const wos = Store.workoutsByDate(curDate);
+    const vol = wos.reduce((s, w) => s + Calc.workoutVolume(w.entries), 0);
+    const burned = Calc.caloriesBurned(vol);
+    const water = Store.getWater(curDate);
+
+    let h = `<h1>Today</h1>${dateStrip()}`;
+    h += `<div class="card">${ring(g.calories ? kcal / g.calories : 0, kcal, `/ ${g.calories} kcal`)}
+      <div class="row between" style="margin-top:6px">
+        <span class="muted">🍽 ${kcal} in</span><span class="muted">🔥 ${burned} out</span>
+        <span class="${remaining < 0 ? "over" : "good-txt"}">${remaining >= 0 ? remaining + " left" : -remaining + " over"}</span>
+      </div>
+      <p class="muted" style="font-size:13px;text-align:center;margin:6px 0 0">Net ${kcal - burned} kcal</p>
+    </div>`;
+    h += `<div class="card"><h2>Macros</h2>
+      ${macroBar("Protein", macros.p, g.protein, "#3b82f6")}
+      ${macroBar("Carbs", macros.c, g.carbs, "#f5c451")}
+      ${macroBar("Fat", macros.f, g.fat, "#ff5a3c")}</div>`;
+    h += `<div class="card"><div class="row between"><h2>Water</h2><strong>${water} / ${g.water}</strong></div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn-sm" data-action="water-minus" aria-label="less water">−</button>
+        <div class="grow water-track">${Array.from({ length: g.water }, (_, i) => `<span class="glass ${i < water ? "full" : ""}">${i < water ? "💧" : "·"}</span>`).join("")}</div>
+        <button class="btn-sm" data-action="water-plus" aria-label="more water">＋</button></div></div>`;
+    h += `<div class="card"><div class="row between"><h2>Training</h2>
+      <button class="btn-sm btn-accent" data-action="start-empty">Start</button></div>
+      <p class="muted">${wos.length} session${wos.length !== 1 ? "s" : ""} · ${Math.round(vol).toLocaleString()} ${u} volume</p></div>`;
+    h += `<div class="card row between">
+      <div><span class="muted">Streak</span><br><strong style="font-size:22px">🔥 ${Store.streak()}d</strong></div>
+      <div><span class="muted">Protein left</span><br><strong style="font-size:22px">${Math.max(0, Math.round(g.protein - macros.p))}g</strong></div></div>`;
+
+    const ins = insights(g, macros, kcal, water, wos);
+    if (ins.length) h += `<div class="card"><h2>Insights</h2>${ins.map(i => `<p class="muted" style="margin:4px 0">• ${esc(i)}</p>`).join("")}</div>`;
     return h;
+  }
+  function insights(g, macros, kcal, water, wos) {
+    const out = [];
+    const pRem = Math.round(g.protein - macros.p);
+    if (pRem > 0 && kcal > 0) out.push(`${pRem} g protein to hit your goal.`);
+    if (kcal > g.calories) out.push(`${kcal - g.calories} kcal over your goal.`);
+    if (water < g.water) out.push(`${g.water - water} more glass${g.water - water !== 1 ? "es" : ""} of water.`);
+    if (!wos.length && curDate === Store.dayKey()) out.push("No workout logged yet today.");
+    if (Store.streak() >= 3) out.push(`${Store.streak()}-day streak — keep it going!`);
+    return out;
+  }
+
+  // ---------- TRAIN (hub) ----------
+  function viewTrain() {
+    const rs = Store.routines();
+    let h = `<h1>Train</h1>${dateStrip()}`;
+    h += `<button class="btn-accent btn-full" data-action="start-empty">＋ Start empty workout</button><div class="spacer"></div>`;
+    h += `<h2>Starter plans</h2><div class="row wrap" style="margin-bottom:12px">${
+      Store.STARTER_PLANS.map(p => `<button class="btn-sm btn-ghost pill" data-action="add-plan" data-name="${esc(p.name)}">＋ ${esc(p.name)}</button>`).join("")}</div>`;
+    if (rs.length) {
+      h += `<h2>Your routines</h2>` + rs.map(rt => `<div class="card row between">
+        <div><strong>${esc(rt.name)}</strong><br><span class="muted">${rt.exerciseIds.length} exercises</span></div>
+        <button class="btn-blue" data-action="start-routine" data-id="${rt.id}">Start</button></div>`).join("");
+    }
+    h += `<div class="spacer"></div><div class="row">
+      <a class="btn btn-ghost grow" href="#/exercises" style="text-align:center;text-decoration:none">Exercises</a>
+      <a class="btn btn-ghost grow" href="#/history" style="text-align:center;text-decoration:none">History</a></div>`;
+    return h;
+  }
+
+  // ---------- FUEL (nutrition) ----------
+  function viewFuel() {
+    const food = Store.foodByDate(curDate);
+    const totals = Calc.dayMacros(food);
+    let h = `<h1>Fuel</h1>${dateStrip()}`;
+    h += `<div class="card row between" style="text-align:center">
+      <div><span class="muted">kcal</span><br><strong style="font-size:20px">${Math.round(totals.kcal)}</strong></div>
+      <div><span class="muted">P</span><br><strong>${Math.round(totals.p)}g</strong></div>
+      <div><span class="muted">C</span><br><strong>${Math.round(totals.c)}g</strong></div>
+      <div><span class="muted">F</span><br><strong>${Math.round(totals.f)}g</strong></div></div>`;
+    MEALS.forEach(meal => {
+      const items = food.filter(f => f.meal === meal);
+      const sub = Calc.dayMacros(items);
+      h += `<div class="card">
+        <div class="row between"><h2>${meal}</h2>
+          <button class="btn-sm btn-blue" data-action="add-food" data-meal="${meal}" aria-label="add food">＋</button></div>
+        ${items.length ? items.map(f => {
+          const m = Calc.foodMacros(f);
+          return `<div class="list-item"><div><strong>${esc(f.name)}</strong><br>
+            <span class="muted">${f.grams} g · ${Math.round(m.kcal)} kcal · P${Math.round(m.p)} C${Math.round(m.c)} F${Math.round(m.f)}</span></div>
+            <button class="btn-sm btn-ghost btn-danger" data-action="del-food" data-id="${f.id}" aria-label="delete food">✕</button></div>`;
+        }).join("") : `<p class="muted" style="font-size:14px">Nothing logged.</p>`}
+        ${items.length ? `<p class="muted" style="font-size:13px;text-align:right;margin:6px 0 0">${Math.round(sub.kcal)} kcal</p>` : ""}
+      </div>`;
+    });
+    return h;
+  }
+
+  // ---------- MORE (menu) ----------
+  function viewMore() {
+    const link = (href, title, sub) =>
+      `<a class="list-item" href="${href}" style="text-decoration:none;color:inherit">
+        <strong>${title}</strong><span class="muted">${sub} ›</span></a>`;
+    return `<h1>More</h1><div class="card">
+      ${link("#/exercises", "🏋️ Exercises", "library & custom")}
+      ${link("#/routines", "📋 Routines", "templates & plans")}
+      ${link("#/history", "📖 History", "past workouts")}
+      ${link("#/settings", "⚙️ Settings", "goals, units, backup")}
+    </div><p class="fab-note">Forge · offline-first · data stays on this device.</p>`;
   }
 
   // ---------- EXERCISES ----------
@@ -198,6 +321,18 @@
         <input type="number" inputmode="numeric" data-setting="restDefault" value="${s.restDefault}">
         <label>Quick +/- weight increment</label>
         <input type="number" inputmode="decimal" data-setting="increment" value="${s.increment}">
+      </div>
+      <div class="card">
+        <h2>Daily goals</h2>
+        <div class="row">
+          <div class="grow"><label>Calories</label><input type="number" inputmode="numeric" data-goal="calories" value="${Store.goals().calories}"></div>
+          <div class="grow"><label>Water (glasses)</label><input type="number" inputmode="numeric" data-goal="water" value="${Store.goals().water}"></div>
+        </div>
+        <div class="row">
+          <div class="grow"><label>Protein (g)</label><input type="number" inputmode="numeric" data-goal="protein" value="${Store.goals().protein}"></div>
+          <div class="grow"><label>Carbs (g)</label><input type="number" inputmode="numeric" data-goal="carbs" value="${Store.goals().carbs}"></div>
+          <div class="grow"><label>Fat (g)</label><input type="number" inputmode="numeric" data-goal="fat" value="${Store.goals().fat}"></div>
+        </div>
       </div>
       <div class="card">
         <h2>Backup</h2>
@@ -400,6 +535,8 @@
     if (themeSel) themeSel.addEventListener("change", () => {
       Store.setSetting("theme", themeSel.value); applyTheme(); render();
     });
+    appEl.querySelectorAll("[data-goal]").forEach(el =>
+      el.addEventListener("change", () => Store.setGoal(el.dataset.goal, el.value)));
   }
 
   function applyTheme() {
@@ -414,9 +551,17 @@
     const active = Store.active();
 
     switch (a.action) {
-      case "start-empty": Store.startWorkout(null); return go("workout");
-      case "start-routine": Store.startWorkout(a.id); return go("workout");
+      case "start-empty": Store.startWorkout(null, curDate); return go("workout");
+      case "start-routine": Store.startWorkout(a.id, curDate); return go("workout");
       case "resume": return go("workout");
+
+      case "date-prev": return shiftDate(-1);
+      case "date-next": return shiftDate(1);
+      case "date-today": curDate = Store.dayKey(); return render();
+      case "water-plus": Store.addWater(curDate, 1); return render();
+      case "water-minus": Store.addWater(curDate, -1); return render();
+      case "add-food": return addFoodModal(a.meal);
+      case "del-food": Store.removeFood(a.id); return render();
 
       case "filter": exFilter = a.g; return render();
       case "new-exercise": return exerciseForm();
@@ -503,6 +648,13 @@
   function stepFor(i) {
     const ex = Store.exercise(Store.active().entries[i].exerciseId);
     return (ex && ex.increment) || Store.settings().increment || 2.5;
+  }
+  function shiftDate(delta) {
+    const d = new Date(curDate + "T00:00:00");
+    d.setDate(d.getDate() + delta);
+    const key = Store.dayKey(d.getTime());
+    if (key > Store.dayKey()) return; // no future dates
+    curDate = key; render();
   }
 
   // ---------- modals ----------
@@ -734,6 +886,154 @@
     inp.focus();
   }
 
+  // ---------- nutrition modals + Open Food Facts ----------
+  function offToItem(p) {
+    const n = p.nutriments || {};
+    let kcal = n["energy-kcal_100g"];
+    if (kcal == null && n["energy_100g"] != null) kcal = n["energy_100g"] / 4.184; // kJ→kcal
+    const name = p.product_name || "Unnamed";
+    if (kcal == null && !p.product_name) return null;
+    return {
+      name, serving: parseFloat(p.serving_size) || 100,
+      per100: { kcal: Math.round(kcal || 0), p: +(n.proteins_100g || 0), c: +(n.carbohydrates_100g || 0), f: +(n.fat_100g || 0) },
+    };
+  }
+  async function searchOFF(term) {
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(term)}&search_simple=1&action=process&json=1&page_size=15&fields=product_name,nutriments,serving_size`;
+    const data = await (await fetch(url)).json();
+    return (data.products || []).map(offToItem).filter(Boolean);
+  }
+  function offByBarcode(code) {
+    return fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,nutriments,serving_size`)
+      .then(r => r.json()).then(d => (d.status === 1 ? offToItem(d.product) : null));
+  }
+
+  function addFoodModal(meal) {
+    const canScan = "BarcodeDetector" in window;
+    openModal(`<div class="card" style="min-width:300px;max-height:85vh;overflow:auto">
+      <div class="row between"><h2>Add to ${esc(meal)}</h2><button data-action="modal-close" class="btn-sm">Close</button></div>
+      <div class="row"><input id="food-q" placeholder="Search food…" autofocus>
+        ${canScan ? `<button class="btn-sm" id="food-scan" aria-label="scan barcode">📷</button>` : ""}</div>
+      <button class="btn-sm btn-ghost btn-full" id="food-manual" style="margin-top:8px">＋ Manual entry</button>
+      <div id="food-results" style="margin-top:10px"><p class="muted">Search Open Food Facts, or your saved foods.</p></div>
+    </div>`);
+    const q = modal.querySelector("#food-q");
+    const results = modal.querySelector("#food-results");
+    const listHTML = (items, heading) => items.length
+      ? `<p class="muted" style="font-size:12px;margin:8px 0 4px">${heading}</p>` + items.map(it =>
+          `<button type="button" class="list-item btn-ghost btn-full" data-food="${encodeURIComponent(JSON.stringify(it))}" style="text-align:left;border-radius:0">
+            <span><strong>${esc(it.name)}</strong><br><span class="muted">${Math.round(it.per100.kcal)} kcal/100g · P${Math.round(it.per100.p)} C${Math.round(it.per100.c)} F${Math.round(it.per100.f)}</span></span>
+          </button>`).join("")
+      : "";
+    let timer;
+    const doSearch = async () => {
+      const term = q.value.trim();
+      const lib = Store.searchLibrary(term).map(f => ({ name: f.name, per100: f.per100, serving: f.serving }));
+      if (term.length < 2) { results.innerHTML = listHTML(lib, "Your foods") || `<p class="muted">Type to search…</p>`; return; }
+      results.innerHTML = listHTML(lib, "Your foods") + `<p class="muted">Searching Open Food Facts…</p>`;
+      try {
+        const off = await searchOFF(term);
+        results.innerHTML = (listHTML(lib, "Your foods") + listHTML(off, "Open Food Facts")) || `<p class="muted">No results.</p>`;
+      } catch (_) {
+        results.innerHTML = listHTML(lib, "Your foods") + `<p class="muted">Couldn't reach Open Food Facts (offline?). Use manual entry.</p>`;
+      }
+    };
+    q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(doSearch, 350); });
+    results.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-food]");
+      if (b) portionModal(meal, JSON.parse(decodeURIComponent(b.dataset.food)));
+    });
+    modal.querySelector("#food-manual").onclick = () => manualFoodModal(meal);
+    if (canScan) modal.querySelector("#food-scan").onclick = () => barcodeScanModal(meal);
+  }
+
+  function portionModal(meal, item) {
+    const g0 = item.serving || 100;
+    const calc = (g) => { const f = (g || 0) / 100, p = item.per100; return `${Math.round(p.kcal * f)} kcal · P${Math.round(p.p * f)} C${Math.round(p.c * f)} F${Math.round(p.f * f)}`; };
+    openModal(`<div class="card" style="min-width:280px">
+      <h2>${esc(item.name)}</h2>
+      <label>Grams</label><input id="port-g" inputmode="decimal" value="${g0}">
+      <p id="port-out" class="muted" style="margin-top:8px">${calc(g0)}</p>
+      <div class="spacer"></div>
+      <div class="row"><span class="grow"></span><button data-action="modal-close">Cancel</button>
+        <button class="btn-accent" id="port-add">Add</button></div>
+    </div>`);
+    const gi = modal.querySelector("#port-g");
+    gi.addEventListener("input", () => { modal.querySelector("#port-out").innerHTML = calc(parseFloat(gi.value)); });
+    modal.querySelector("#port-add").onclick = () => {
+      Store.addFood({ date: curDate, meal, name: item.name, grams: parseFloat(gi.value) || 0, per100: item.per100 });
+      Store.saveFood({ name: item.name, per100: item.per100, serving: item.serving });
+      modal.close(); render();
+    };
+  }
+
+  function manualFoodModal(meal) {
+    openModal(`<form method="dialog" class="card" style="min-width:280px">
+      <h2>Manual food</h2>
+      <label>Name</label><input id="mf-name" required>
+      <div class="row"><div class="grow"><label>Calories</label><input id="mf-kcal" inputmode="decimal"></div>
+        <div class="grow"><label>Protein (g)</label><input id="mf-p" inputmode="decimal"></div></div>
+      <div class="row"><div class="grow"><label>Carbs (g)</label><input id="mf-c" inputmode="decimal"></div>
+        <div class="grow"><label>Fat (g)</label><input id="mf-f" inputmode="decimal"></div></div>
+      <p class="muted" style="font-size:12px">Values for this portion. Saved to your food library.</p>
+      <div class="spacer"></div>
+      <div class="row"><span class="grow"></span><button type="button" data-action="modal-close">Cancel</button>
+        <button type="button" class="btn-accent" id="mf-add">Add</button></div>
+    </form>`);
+    modal.querySelector("#mf-add").onclick = () => {
+      const name = modal.querySelector("#mf-name").value.trim();
+      if (!name) return;
+      const per100 = {
+        kcal: +modal.querySelector("#mf-kcal").value || 0, p: +modal.querySelector("#mf-p").value || 0,
+        c: +modal.querySelector("#mf-c").value || 0, f: +modal.querySelector("#mf-f").value || 0,
+      };
+      Store.addFood({ date: curDate, meal, name, grams: 100, per100 }); // grams=100 → macros == entered
+      Store.saveFood({ name, per100, serving: 100 });
+      modal.close(); render();
+    };
+  }
+
+  function barcodeScanModal(meal) {
+    const canScan = "BarcodeDetector" in window;
+    openModal(`<div class="card" style="min-width:300px">
+      <div class="row between"><h2>Scan barcode</h2><button data-action="modal-close" class="btn-sm">Close</button></div>
+      ${canScan ? `<video id="bc-video" playsinline style="width:100%;border-radius:12px;background:#000"></video>` : `<p class="muted">Camera scanning isn't supported here — type the number below.</p>`}
+      <label>Or enter barcode number</label>
+      <div class="row"><input id="bc-num" inputmode="numeric" placeholder="e.g. 737628064502">
+        <button class="btn-accent" id="bc-go">Find</button></div>
+      <p id="bc-status" class="muted" style="font-size:13px"></p>
+    </div>`);
+    const status = modal.querySelector("#bc-status");
+    let stop = null;
+    const lookup = async (code) => {
+      status.textContent = "Looking up " + code + "…";
+      try {
+        const item = await offByBarcode(code);
+        if (!item) { status.textContent = "Not found in Open Food Facts."; return; }
+        if (stop) stop();
+        modal.close(); portionModal(meal, item);
+      } catch (_) { status.textContent = "Lookup failed (offline?)."; }
+    };
+    modal.querySelector("#bc-go").onclick = () => { const c = modal.querySelector("#bc-num").value.trim(); if (c) lookup(c); };
+    modal.addEventListener("close", () => { if (stop) stop(); }, { once: true });
+    if (canScan) (async () => {
+      const video = modal.querySelector("#bc-video");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = stream; await video.play();
+        const det = new window.BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e"] });
+        let running = true;
+        stop = () => { running = false; stream.getTracks().forEach(t => t.stop()); };
+        const scan = async () => {
+          if (!running) return;
+          try { const codes = await det.detect(video); if (codes.length) { stop(); lookup(codes[0].rawValue); return; } } catch (_) {}
+          requestAnimationFrame(scan);
+        };
+        scan();
+      } catch (e) { status.textContent = "Camera unavailable: " + e.message; }
+    })();
+  }
+
   // ---------- backup ----------
   function downloadFile(text, name, type) {
     const blob = new Blob([text], { type });
@@ -788,7 +1088,7 @@
   // ---------- boot ----------
   applyTheme();
   window.addEventListener("hashchange", render);
-  if (!location.hash) location.hash = "#/home";
+  if (!location.hash) location.hash = "#/today";
   render();
 
   // ask once for rest-timer notifications (non-blocking)

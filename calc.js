@@ -96,9 +96,30 @@
     return out;
   }
 
+  // Macros of one logged food entry (per-100 nutriments scaled by grams).
+  function foodMacros(entry) {
+    const g = (entry.grams || 0) / 100;
+    const p = entry.per100 || {};
+    return { kcal: (p.kcal || 0) * g, p: (p.p || 0) * g, c: (p.c || 0) * g, f: (p.f || 0) * g };
+  }
+  // Sum a day's food entries into total macros.
+  function dayMacros(entries) {
+    return entries.reduce((t, e) => {
+      const m = foodMacros(e);
+      t.kcal += m.kcal; t.p += m.p; t.c += m.c; t.f += m.f;
+      return t;
+    }, { kcal: 0, p: 0, c: 0, f: 0 });
+  }
+  // Rough calories burned from training volume (Σ weight×reps).
+  // ponytail: crude heuristic (~0.03 kcal per kg moved), not physiology — a tunable knob.
+  function caloriesBurned(volume) {
+    return Math.round(volume * 0.03);
+  }
+
   const Calc = {
     epley1RM, setVolume, best1RM, workoutVolume, completedSets, round,
     personalRecords, exerciseSeries, volumeSeries, newPRs, platesPerSide,
+    foodMacros, dayMacros, caloriesBurned,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = Calc;
