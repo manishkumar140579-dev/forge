@@ -24,26 +24,39 @@ python -m http.server 8000
 node calc.test.js
 ```
 
-## Deploy (free)
+## Deploy to GitHub Pages (free, already wired)
 
-It's static files — drop the `Forge` folder on any static host:
-- **GitHub Pages:** push to a repo, enable Pages → done.
-- **Netlify / Vercel / Cloudflare Pages:** drag-and-drop the folder.
+The repo ships a Pages workflow (`.github/workflows/pages.yml`) — no build config
+needed. From the `Forge` folder:
 
-Once served over HTTPS, phones can "Add to Home Screen" and it runs full-screen, offline.
+```
+# 1. create a repo on github.com (e.g. "forge"), then:
+git remote add origin https://github.com/<you>/forge.git
+git push -u origin main
+# 2. on GitHub: Settings → Pages → Source: "GitHub Actions"
+```
+
+The workflow deploys on every push to `main`. Your app goes live at
+`https://<you>.github.io/forge/`. Once it's HTTPS, phones can "Add to Home Screen"
+and it runs full-screen and offline.
+
+Other hosts: it's plain static files — drag-and-drop the folder onto
+Netlify / Vercel / Cloudflare Pages.
 
 ## Files
 
 | File | What it does |
 |---|---|
 | `index.html` | App shell + loads scripts |
-| `app.css` | All styling (dark, glassy, safe-area aware) |
-| `calc.js` | Pure workout math (1RM, volume) — unit-tested |
+| `app.css` | All styling (dark/light, glassy, safe-area aware) |
+| `calc.js` | Pure workout math (1RM, volume, PRs, plates) — unit-tested |
 | `calc.test.js` | `node` self-check for `calc.js` |
 | `store.js` | Data layer — all reads/writes (localStorage) |
 | `app.js` | UI, routing, active-workout logger, rest timer |
+| `qrcode.js` | Vendored QR generator (MIT) for routine sharing |
 | `sw.js` | Service worker (offline cache) |
-| `manifest.webmanifest` / `icon.svg` | PWA install config + icon |
+| `manifest.webmanifest` / `icon.svg` / `icon-*.png` | PWA install config + icons |
+| `.github/workflows/pages.yml` | One-click GitHub Pages deploy |
 
 ## Iron issues designed out from day one
 
@@ -54,31 +67,47 @@ Once served over HTTPS, phones can "Add to Home Screen" and it runs full-screen,
 | #11 "Finishing does not finish" | One finish code path: stamps end time, drops empty sets, moves to history, clears active — no ambiguous state |
 | #10 Adding an exercise broken | Simple searchable picker; add-to-workout is one tap |
 | #18 Cable has no normal option | Exercise "category" is a free text field — any equipment, incl. cable |
-| #14 More fields for custom exercises | Name, muscle, category, notes — all editable; easy to add more |
+| #14 More fields for custom exercises | Name, muscle, category, notes, **kind**, default rest, increment |
 | #19 Clone an exercise | Built-in clone button (⧉) |
+| #17 Request for new workout plan | One-tap **starter plans** (PPL, Upper/Lower, Full Body 5×5) |
+| #16 Implement Liquid Glass | Glassy blurred cards + nav, layered highlights |
 | #13 Workout vs routine confusion | Explained directly on the Routines screen |
+| #8 Scan QR | Routine **share/import via QR** (camera scan where supported) + copyable code |
 
 ## Features
 
-- **Log workouts** — start empty or from a routine; fast typing + quick ± buttons;
-  auto rest timer; one reliable finish.
-- **Exercises** — 28 seeded + create / edit / **clone** / delete; live search; any
-  equipment category incl. cable.
-- **Routines** — reusable templates + one-tap **starter plans** (Push/Pull/Legs,
-  Upper/Lower, Full Body 5×5) + **share/import** via a code.
-- **Stats** — inline SVG charts: **volume per workout** and per-exercise
-  **estimated 1RM over time**; **personal records** per exercise; 🏆 PR alert on finish.
+**Logging**
+- Start empty or from a routine; fast typing + quick ± buttons; one reliable finish.
+- **Set types** — normal / warmup / drop / failure (tap the set number to cycle);
+  warmups are excluded from volume & PRs.
+- **RPE** per set, and a **note** per exercise.
+- **Exercise kinds** — weight × reps, bodyweight (reps, optional +weight),
+  time (seconds, e.g. plank), distance (km, e.g. running).
+- **Reorder** exercises mid-workout; **rest timer** auto-starts (per-exercise or
+  global default) with vibrate + notification.
+- **Live 1RM** estimate while you lift; **plate calculator** (what to load per side).
+
+**Organise & review**
+- **Exercises** — 30 seeded + create / edit / **clone** / delete; live search;
+  free-text equipment category; per-exercise default rest & increment.
+- **Routines** — templates + one-tap **starter plans** + **share via code or QR**
+  (scan with the camera where supported).
+- **History** — full log; **edit** any past workout (reopens it).
+- **Stats** — SVG charts for volume & per-exercise 1RM; **personal records** with a
+  🏆 alert on finish; **per-exercise history** screen.
 - **Body weight** tracking with trend chart.
-- **Plate calculator** — what to load on each side of the bar.
-- **Backup** — export / import all data as JSON.
-- **PWA** — installable, offline, one device.
 
-## Extending it (the "new-gen" hooks)
+**Data & app**
+- **kg ⇄ lb** with automatic conversion of existing weights.
+- **Dark / light** theme.
+- Backup **export/import JSON**, **export CSV**.
+- **PWA** — installable (PNG + SVG icons), offline, one device.
 
-- **Bigger data / cloud sync:** swap `store.js`'s `load()`/`save()` for IndexedDB or
-  a backend — nothing else touches storage. (Currently `localStorage`, ~5MB, per-device.)
-- **Camera QR scan (Iron #8):** routine sharing already produces a portable code and
-  imports by paste; wrap that code in a QR image + `getUserMedia` scanner to go fully
-  visual.
-- **Apple Health / wearables, AI suggestions:** all data is plain JSON in one place,
-  `calc.js` already exposes 1RM/volume/PR math — ready to feed anything.
+## Not included (need infrastructure Forge can't provide alone)
+
+- **Cloud sync / multi-device accounts** — needs a hosted backend. Data is
+  per-device `localStorage` today. To add: swap `store.js`'s `load()`/`save()` for a
+  backend/IndexedDB — nothing else touches storage.
+- **Apple Health / HealthKit & wearables** — not reachable from a pure web app.
+  Wrap Forge with [Capacitor](https://capacitorjs.com) to ship it as a native iOS/Android
+  app with Health access; all data is plain JSON and `calc.js` exposes the math.
