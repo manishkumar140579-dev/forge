@@ -232,6 +232,39 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(3px); 
 dialog[open] { animation: pop .18s ease both; }
 @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
 
+/* undo toast */
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--nav-h) + 18px + env(safe-area-inset-bottom));
+  background: var(--surface-solid); color: var(--text); border: 1px solid var(--border);
+  padding: 10px 14px; border-radius: 999px; z-index: 70; display: flex; gap: 12px; align-items: center;
+  box-shadow: var(--shadow); max-width: calc(100% - 24px);
+}
+.toast .btn-sm { background: var(--accent); color: #fff; border: none; min-height: 32px; }
+
+/* progress photos */
+.photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.photo { position: relative; aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-del { position: absolute; top: 4px; right: 4px; min-height: 26px; padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; border: none; }
+
+/* interval timer */
+.iv-display { text-align: center; padding: 18px; border-radius: 16px; background: var(--surface-hi); }
+.iv-phase { font-size: 14px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+.iv-phase.work { color: var(--good); }
+.iv-phase.rest { color: var(--accent-2); }
+.iv-phase.done { color: var(--accent); }
+.iv-time { font-size: 44px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+
+/* print → PDF (report modal only) */
+@media print {
+  nav, #app, #rest, #toast { display: none !important; }
+  dialog { position: static; display: block; padding: 0; }
+  dialog::backdrop { display: none; }
+  body { background: #fff; color: #000; }
+  .report { box-shadow: none; border: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }

@@ -124,9 +124,10 @@
       workouts: [],      // finished workouts, newest first (each has .date "YYYY-MM-DD")
       bodyweights: [],   // [{date, value}] oldest → newest
       measurements: [],  // [{id, date, part, value}]
-      foodLog: [],       // [{id, date, meal, name, grams, per100:{kcal,p,c,f}}]
+      foodLog: [],       // [{id, date, meal, name, grams, per100:{kcal,p,c,f,fiber,sugar,sodium}}]
       foodLibrary: [],   // reusable saved foods [{id, name, per100, serving}]
       water: {},         // { "YYYY-MM-DD": glasses }
+      programs: [],      // [{id, name, dayRoutineIds:[], pos}]
       active: null,      // the in-progress workout, or null
     };
   }
@@ -149,6 +150,7 @@
     s.foodLog = s.foodLog || [];
     s.foodLibrary = s.foodLibrary || [];
     s.water = s.water || {};
+    s.programs = s.programs || [];
     if (!("active" in s)) s.active = null;
     s.exercises.forEach(x => { if (!x.kind) x.kind = "weight"; });
     s.workouts.forEach(w => { if (!w.date) w.date = dayKey(w.end || w.start); });
@@ -479,13 +481,17 @@
     const p = per100 || {};
     const f = {
       id: uid(), date, meal, name: (name || "Food").trim(), grams: +grams || 0,
-      per100: { kcal: +p.kcal || 0, p: +p.p || 0, c: +p.c || 0, f: +p.f || 0 },
+      per100: {
+        kcal: +p.kcal || 0, p: +p.p || 0, c: +p.c || 0, f: +p.f || 0,
+        fiber: +p.fiber || 0, sugar: +p.sugar || 0, sodium: +p.sodium || 0,
+      },
     };
     state.foodLog.push(f);
     save();
     return f;
   }
   function removeFood(id) { state.foodLog = state.foodLog.filter(f => f.id !== id); save(); }
+  function restoreFood(f) { if (f) { state.foodLog.push(f); save(); } }
 
   // ---- reusable food library ----
   function foodLibrary() { return state.foodLibrary; }
@@ -556,6 +562,61 @@
     return n;
   }
 
+  // ---- undo restores (app captures the item before delete) ----
+  function restoreWorkout(w) { if (w) { state.workouts.unshift(w); save(); } }
+  function restoreMeasurement(m) { if (m) { state.measurements.push(m); save(); } }
+  function restoreExercise(x) { if (x) { state.exercises.push(x); save(); } }
+  function toggleFav(id) { const x = exercise(id); if (x) { x.fav = !x.fav; save(); } return x; }
+
+  // ---- programs (an ordered list of routines = training days) ----
+  function programs() { return state.programs; }
+  function addProgram({ name, dayRoutineIds }) {
+    const p = { id: uid(), name: (name || "Program").trim(), dayRoutineIds: dayRoutineIds || [], pos: 0 };
+    state.programs.push(p); save(); return p;
+  }
+  function deleteProgram(id) { state.programs = state.programs.filter(p => p.id !== id); save(); }
+  function programNextRoutineId(id) {
+    const p = state.programs.find(x => x.id === id);
+    return p && p.dayRoutineIds.length ? p.dayRoutineIds[p.pos % p.dayRoutineIds.length] : null;
+  }
+  function advanceProgram(id) {
+    const p = state.programs.find(x => x.id === id);
+    if (p && p.dayRoutineIds.length) { p.pos = (p.pos + 1) % p.dayRoutineIds.length; save(); }
+  }
+
+  // ---- import workouts parsed from a Strong/Hevy CSV ----
+  function importWorkouts(parsed) {
+    let added = 0;
+    for (const w of parsed) {
+      const entries = w.entries.map(en => {
+        let ex = state.exercises.find(x => x.name.toLowerCase() === en.name.toLowerCase());
+        if (!ex) ex = addExercise({ name: en.name, muscle: "Other", category: "" });
+        return {
+          exerciseId: ex.id, kind: ex.kind || "weight", note: "",
+          sets: en.sets.map(s => ({ weight: s.weight, reps: s.reps, done: true, type: "normal", rpe: "" })),
+        };
+      });
+      const ts = w.date ? new Date(w.date + "T12:00:00").getTime() : Date.now();
+      state.workouts.push({ id: uid(), name: w.name, date: w.date || dayKey(ts), start: ts, end: ts, entries });
+      added++;
+    }
+    state.workouts.sort((a, b) => (b.end || 0) - (a.end || 0));
+    save();
+    return added;
+  }
+
+  // ---- progress photos (kept in a separate key; images are large) ----
+  const PKEY = "forge.photos.v1";
+  function photos() { try { return JSON.parse(localStorage.getItem(PKEY) || "[]"); } catch (_) { return []; } }
+  function addPhoto(dataUrl) {
+    const list = photos();
+    list.unshift({ id: uid(), date: Date.now(), src: dataUrl });
+    try { localStorage.setItem(PKEY, JSON.stringify(list)); return true; } catch (_) { return false; }
+  }
+  function deletePhoto(id) {
+    try { localStorage.setItem(PKEY, JSON.stringify(photos().filter(p => p.id !== id))); } catch (_) {}
+  }
+
   function exportJSON() { return JSON.stringify(state, null, 2); }
   function importJSON(text) {
     const parsed = JSON.parse(text);
@@ -569,13 +630,15 @@
     MUSCLES, STARTER_PLANS, MEAS_PARTS, dayKey, get, settings, setSetting, goals, setGoal,
     measurements, measurementsByPart, addMeasurement, deleteMeasurement,
     recentFoods, copyDayFood,
-    exercises, exercise, addExercise, updateExercise, deleteExercise, cloneExercise,
+    exercises, exercise, addExercise, updateExercise, deleteExercise, cloneExercise, toggleFav, restoreExercise,
     routines, addRoutine, deleteRoutine, addStarterPlan, routineToCode, routineFromCode,
+    programs, addProgram, deleteProgram, programNextRoutineId, advanceProgram,
+    importWorkouts, photos, addPhoto, deletePhoto, restoreWorkout, restoreMeasurement,
     active, startWorkout, saveActiveAsRoutine, addEntry, removeEntry, moveEntry, setEntryNote,
     addSet, updateSet, removeSet, addWarmups,
     finishWorkout, discardWorkout, renameActive, workouts, deleteWorkout, reopenWorkout, workoutsByDate,
     bodyweights, addBodyweight, deleteBodyweight, convertUnits,
-    foodByDate, addFood, removeFood, foodLibrary, saveFood, deleteLibraryFood, searchLibrary,
+    foodByDate, addFood, removeFood, restoreFood, foodLibrary, saveFood, deleteLibraryFood, searchLibrary,
     getWater, setWater, addWater, dayHasActivity, streak,
     lastPerformance, exportJSON, exportCSV, importJSON, reset,
   };

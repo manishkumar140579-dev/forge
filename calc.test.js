@@ -93,4 +93,29 @@ assert.deepStrictEqual(C.warmupSets(100, 20),
   [{ weight: 20, reps: 10 }, { weight: 40, reps: 8 }, { weight: 60, reps: 5 }, { weight: 80, reps: 3 }]);
 assert.deepStrictEqual(C.warmupSets(20, 20), []); // nothing to ramp
 
+// muscle sets: completed working sets per muscle since a time
+const exById = (id) => ({ sq: { muscle: "Legs" }, bp: { muscle: "Chest" } }[id]);
+const wk2 = [{ end: 1000, entries: [
+  { exerciseId: "sq", sets: [{ done: true }, { done: true }, { done: true, type: "warmup" }] },
+  { exerciseId: "bp", sets: [{ done: true }, { done: false }] },
+] }];
+const mb = C.muscleSets(wk2, exById, 0);
+assert.strictEqual(mb.Legs, 2);   // warmup + incomplete excluded
+assert.strictEqual(mb.Chest, 1);
+
+// overload: all sets hit >=8 reps → suggest +2.5
+assert.strictEqual(C.overloadSuggestion([{ weight: 100, reps: 8 }, { weight: 100, reps: 8 }], 2.5, 8), 102.5);
+assert.strictEqual(C.overloadSuggestion([{ weight: 100, reps: 5 }], 2.5, 8), null);
+
+// micros
+assert.strictEqual(C.dayMicros([{ grams: 200, per100: { fiber: 5, sugar: 10, sodium: 0.4 } }]).fiber, 10);
+
+// CSV import (Strong-style header)
+const csv = 'Date,Workout Name,Exercise Name,Weight,Reps\n2026-01-02,Push,Bench Press,100,5\n2026-01-02,Push,Bench Press,100,5\n2026-01-02,Push,Overhead Press,60,8\n';
+const parsed = C.parseWorkoutCSV(csv);
+assert.strictEqual(parsed.length, 1);
+assert.strictEqual(parsed[0].name, "Push");
+assert.strictEqual(parsed[0].entries.length, 2);
+assert.strictEqual(parsed[0].entries[0].sets.length, 2);
+
 console.log("ok — all calc checks passed");

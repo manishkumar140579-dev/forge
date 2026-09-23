@@ -149,10 +149,87 @@
     return out;
   }
 
+  // Completed working sets per muscle group since a timestamp (for a weekly heatmap).
+  function muscleSets(workouts, exerciseById, sinceTs) {
+    const out = {};
+    for (const w of workouts) {
+      const t = w.end || w.start || 0;
+      if (sinceTs && t < sinceTs) continue;
+      for (const e of w.entries) {
+        const ex = exerciseById(e.exerciseId);
+        const muscle = (ex && ex.muscle) || "Other";
+        const n = e.sets.filter(s => s.done && s.type !== "warmup").length;
+        if (n) out[muscle] = (out[muscle] || 0) + n;
+      }
+    }
+    return out;
+  }
+
+  // Progressive overload: if every working set last time hit >= targetReps, suggest +increment.
+  function overloadSuggestion(sets, increment, targetReps) {
+    const work = sets.filter(s => s.type !== "warmup" && (s.weight || 0) > 0);
+    if (!work.length) return null;
+    const minReps = Math.min(...work.map(s => s.reps || 0));
+    const topW = Math.max(...work.map(s => s.weight || 0));
+    return minReps >= (targetReps || 8) ? round(topW + (increment || 2.5), 0.5) : null;
+  }
+
+  // Micronutrient totals (fiber/sugar/sodium) for a day's food entries.
+  function dayMicros(entries) {
+    return entries.reduce((t, e) => {
+      const g = (e.grams || 0) / 100, p = e.per100 || {};
+      t.fiber += (p.fiber || 0) * g; t.sugar += (p.sugar || 0) * g; t.sodium += (p.sodium || 0) * g;
+      return t;
+    }, { fiber: 0, sugar: 0, sodium: 0 });
+  }
+
+  // Tolerant CSV row splitter (handles quoted fields with commas/newlines).
+  function csvRows(text) {
+    const rows = []; let row = [], cur = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+      else if (c === '"') q = true;
+      else if (c === ",") { row.push(cur); cur = ""; }
+      else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cur); rows.push(row); row = []; cur = ""; }
+      else cur += c;
+    }
+    if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(r => r.length && r.some(x => x !== ""));
+  }
+
+  // Parse a Strong/Hevy-style workout CSV into neutral {date,name,entries:[{name,sets:[{weight,reps}]}]}.
+  function parseWorkoutCSV(text) {
+    const rows = csvRows(text);
+    if (rows.length < 2) return [];
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    const col = (...names) => { for (const n of names) { const i = header.indexOf(n); if (i >= 0) return i; } return -1; };
+    const ci = { date: col("date"), wname: col("workout name", "workout", "title"), ex: col("exercise name", "exercise"), w: col("weight", "weight (kg)", "weight (lbs)", "weight_kg"), r: col("reps", "rep count") };
+    if (ci.ex < 0 || ci.r < 0) return [];
+    const byKey = new Map();
+    for (let i = 1; i < rows.length; i++) {
+      const rec = rows[i];
+      const exName = (rec[ci.ex] || "").trim();
+      if (!exName) continue;
+      const date = ci.date >= 0 ? (rec[ci.date] || "").slice(0, 10) : "";
+      const wname = (ci.wname >= 0 ? rec[ci.wname] : "") || "Imported workout";
+      const key = date + "|" + wname;
+      if (!byKey.has(key)) byKey.set(key, { date, name: wname, entries: new Map() });
+      const wk = byKey.get(key);
+      if (!wk.entries.has(exName)) wk.entries.set(exName, []);
+      wk.entries.get(exName).push({ weight: parseFloat(rec[ci.w]) || 0, reps: parseInt(rec[ci.r]) || 0 });
+    }
+    return [...byKey.values()].map(wk => ({
+      date: wk.date, name: wk.name,
+      entries: [...wk.entries.entries()].map(([name, sets]) => ({ name, sets })),
+    }));
+  }
+
   const Calc = {
     epley1RM, setVolume, best1RM, workoutVolume, completedSets, round,
     personalRecords, exerciseSeries, volumeSeries, newPRs, platesPerSide,
     foodMacros, dayMacros, caloriesBurned, tdee, macrosFromCalories, warmupSets,
+    muscleSets, overloadSuggestion, dayMicros, parseWorkoutCSV,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = Calc;
