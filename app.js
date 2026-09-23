@@ -12,13 +12,14 @@
   const fmtTime = (ts) => new Date(ts).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   const num = (v) => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
 
-  const routes = ["today", "train", "fuel", "more", "exercises", "history", "routines", "stats", "settings", "workout"];
+  const routes = ["today", "train", "fuel", "more", "exercises", "history", "routines", "stats", "settings", "workout", "welcome"];
   const route = () => {
     const r = (location.hash.replace(/^#\/?/, "") || "today").split("/")[0];
     return routes.includes(r) ? r : "today";
   };
   const go = (r) => { location.hash = "#/" + r; };
   let curDate = Store.dayKey();
+  let welcomeUnit = Store.settings().unit;
 
   // ---------- shell + nav ----------
   // Feather-style line icons from the design mockups
@@ -98,9 +99,10 @@
     else if (r === "stats") html = viewStats();
     else if (r === "settings") html = viewSettings();
     else if (r === "workout") html = viewWorkout();
+    else if (r === "welcome") html = viewWelcome();
     appEl.innerHTML = html;
     document.querySelectorAll("body > nav").forEach(n => n.remove()); // only the bottom bar, not in-content navs
-    document.body.insertAdjacentHTML("beforeend", navHTML(navActive(r)));
+    if (r !== "welcome") document.body.insertAdjacentHTML("beforeend", navHTML(navActive(r)));
     wireInputs();
     renderRest();
   }
@@ -303,6 +305,30 @@
     </section>`;
     h += `<p class="version">Forge · offline-first</p>`;
     return h;
+  }
+
+  // ---------- WELCOME (first run) ----------
+  function viewWelcome() {
+    const feat = (ic, t, s) => `<li class="wf"><span class="wf-ico">${svgIcon(ic, 22)}</span>
+      <span class="wf-t"><span class="wf-title">${t}</span><span class="cap">${s}</span></span></li>`;
+    return `<div class="welcome">
+      <div class="wbrand"><span class="wbrand-ico">${svgIcon("train", 22, 2.2)}</span><span class="wbrand-name">FORGE</span></div>
+      <div><h1 class="wtitle">Train. Eat.<br>See progress.</h1>
+        <p class="wlead">One simple app for your workouts and your food. No account needed — everything stays on your phone.</p></div>
+      <ul class="wlist">
+        ${feat("train", "Log a workout in seconds", "Big buttons, one hand, rest timer built in.")}
+        ${feat("fuel", "Track food by meal", "Search, scan a barcode, or copy yesterday.")}
+        ${feat("progress", "Watch your progress", "Personal records, body weight and streaks.")}
+      </ul>
+      <div class="wgrow"></div>
+      <div><span class="stp-label">I lift in</span>
+        <div class="seg" style="margin-top:8px">
+          <button class="${welcomeUnit === "kg" ? "on" : ""}" data-action="welcome-unit" data-v="kg">Kilograms (kg)</button>
+          <button class="${welcomeUnit === "lb" ? "on" : ""}" data-action="welcome-unit" data-v="lb">Pounds (lb)</button>
+        </div></div>
+      <div><button class="btn-accent wcta" data-action="welcome-go">Get started</button>
+        <p class="cap" style="text-align:center;margin-top:8px">You can change this any time in Settings.</p></div>
+    </div>`;
   }
 
   // ---------- EXERCISES ----------
@@ -825,6 +851,8 @@
       }
       case "tdee": return tdeeModal();
       case "one-rm-tool": return oneRMToolModal();
+      case "welcome-unit": welcomeUnit = a.v; return render();
+      case "welcome-go": Store.setSetting("unit", welcomeUnit); localStorage.setItem("forge.welcomed", "1"); return go("today");
       case "add-measurement": {
         const sel = appEl.querySelector("#meas-part"), val = appEl.querySelector("#meas-val");
         if (sel && val && val.value) { Store.addMeasurement({ part: sel.value, value: val.value }); val.value = ""; render(); }
@@ -1284,23 +1312,44 @@
   }
 
   function portionModal(meal, item) {
-    const g0 = item.serving || 100;
-    const calc = (g) => { const f = (g || 0) / 100, p = item.per100; return `${Math.round(p.kcal * f)} kcal · P${Math.round(p.p * f)} C${Math.round(p.c * f)} F${Math.round(p.f * f)}`; };
-    openModal(`<div class="card" style="min-width:280px">
+    const p = item.per100;
+    openModal(`<div class="card">
       <h2>${esc(item.name)}</h2>
-      <label>Grams</label><input id="port-g" inputmode="decimal" value="${g0}">
-      <p id="port-out" class="muted" style="margin-top:8px">${calc(g0)}</p>
-      <div class="spacer"></div>
-      <div class="row"><span class="grow"></span><button data-action="modal-close">Cancel</button>
-        <button class="btn-accent" id="port-add">Add</button></div>
+      <p class="cap">Per 100 g: ${Math.round(p.kcal)} kcal · P ${Math.round(p.p)} · C ${Math.round(p.c)} · F ${Math.round(p.f)}</p>
+      <label class="stp-label" for="port-g" style="display:block;margin:14px 0 8px">How much? (grams)</label>
+      <div class="po-grams">
+        <button class="po-step" data-po="dec" aria-label="10 grams less">${svgIcon("minus", 22, 2.4)}</button>
+        <input id="port-g" inputmode="decimal" value="${item.serving || 100}">
+        <button class="po-step" data-po="inc" aria-label="10 grams more">${svgIcon("plus", 22, 2.4)}</button>
+      </div>
+      <div class="po-chips">${[50, 100, 150, 200].map(v => `<button class="po-chip" data-po="chip" data-v="${v}">${v} g</button>`).join("")}</div>
+      <dl class="po-macros" id="po-out"></dl>
+      <button class="btn-accent po-add" id="port-add">Add to ${esc(meal)}</button>
     </div>`);
     const gi = modal.querySelector("#port-g");
-    gi.addEventListener("input", () => { modal.querySelector("#port-out").innerHTML = calc(parseFloat(gi.value)); });
-    modal.querySelector("#port-add").onclick = () => {
-      Store.addFood({ date: curDate, meal, name: item.name, grams: parseFloat(gi.value) || 0, per100: item.per100 });
-      Store.saveFood({ name: item.name, per100: item.per100, serving: item.serving });
+    const out = modal.querySelector("#po-out");
+    const addBtn = modal.querySelector("#port-add");
+    const upd = () => {
+      const gv = parseFloat(gi.value) || 0, f = gv / 100;
+      out.innerHTML = `<div><dt>Calories</dt><dd>${Math.round(p.kcal * f)}</dd></div>
+        <div><dt>Protein</dt><dd style="color:var(--macro-p)">${Math.round(p.p * f)} g</dd></div>
+        <div><dt>Carbs</dt><dd style="color:var(--macro-c)">${Math.round(p.c * f)} g</dd></div>
+        <div><dt>Fat</dt><dd style="color:var(--macro-f)">${Math.round(p.f * f)} g</dd></div>`;
+      addBtn.textContent = `Add ${gv} g to ${meal}`;
+      modal.querySelectorAll(".po-chip").forEach(c => c.classList.toggle("on", +c.dataset.v === gv));
+    };
+    gi.addEventListener("input", upd);
+    modal.querySelectorAll("[data-po]").forEach(el => el.addEventListener("click", () => {
+      const k = el.dataset.po; let gv = parseFloat(gi.value) || 0;
+      if (k === "dec") gv = Math.max(0, gv - 10); else if (k === "inc") gv += 10; else gv = +el.dataset.v;
+      gi.value = gv; upd();
+    }));
+    addBtn.onclick = () => {
+      Store.addFood({ date: curDate, meal, name: item.name, grams: parseFloat(gi.value) || 0, per100: p });
+      Store.saveFood({ name: item.name, per100: p, serving: item.serving });
       modal.close(); render();
     };
+    upd();
   }
 
   function manualFoodModal(meal) {
@@ -1681,6 +1730,12 @@
   // ---------- boot ----------
   applyTheme();
   window.addEventListener("hashchange", render);
+  // first run → Welcome; returning users (any data or seen flag) skip it
+  if (!localStorage.getItem("forge.welcomed") && !Store.workouts().length && !Store.foodByDate(Store.dayKey()).length) {
+    if (!location.hash || location.hash === "#/today") location.hash = "#/welcome";
+  } else if (!localStorage.getItem("forge.welcomed")) {
+    localStorage.setItem("forge.welcomed", "1");
+  }
   if (!location.hash) location.hash = "#/today";
   render();
 
