@@ -1,9 +1,9 @@
 // sw.js — cache-first offline shell. Bump CACHE to ship an update.
-const CACHE = "forge-v11";
+const CACHE = "forge-v12";
 const ASSETS = [
   "./", "./index.html", "./app.css",
   "./qrcode.js", "./calc.js", "./store.js", "./app.js",
-  "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png",
+  "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-180.png",
 ];
 
 self.addEventListener("install", (e) => {

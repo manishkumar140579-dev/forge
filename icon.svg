@@ -1,10 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0b0d12"/>
-  <g stroke="#ff5a3c" stroke-width="34" stroke-linecap="round">
-    <line x1="150" y1="256" x2="362" y2="256"/>
-    <line x1="120" y1="200" x2="120" y2="312"/>
-    <line x1="80"  y1="224" x2="80"  y2="288"/>
-    <line x1="392" y1="200" x2="392" y2="312"/>
-    <line x1="432" y1="224" x2="432" y2="288"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Forge">
+  <defs>
+    <linearGradient id="ember" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffa24d"/>
+      <stop offset="0.55" stop-color="#ff6a2f"/>
+      <stop offset="1" stop-color="#ff4d1a"/>
+    </linearGradient>
+    <style>
+      .bg { fill: #0e0f14; }
+      .plate { fill: #f2f1ee; }
+      @media (prefers-color-scheme: light) {
+        .bg { fill: #f2f1ee; }
+        .plate { fill: #14161c; }
+      }
+    </style>
+  </defs>
+
+  <!-- tile background (full-bleed for maskable icons) -->
+  <rect class="bg" width="512" height="512"/>
+
+  <!-- barbell plates: three per side, tallest nearest the flame -->
+  <g class="plate">
+    <rect x="128" y="181" width="22" height="150" rx="11"/>
+    <rect x="94"  y="198" width="22" height="116" rx="11"/>
+    <rect x="60"  y="216" width="22" height="80"  rx="11"/>
+    <rect x="362" y="181" width="22" height="150" rx="11"/>
+    <rect x="396" y="198" width="22" height="116" rx="11"/>
+    <rect x="430" y="216" width="22" height="80"  rx="11"/>
+  </g>
+
+  <!-- flame -->
+  <g transform="translate(151 135) scale(10.5)" fill="url(#ember)">
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
   </g>
 </svg>

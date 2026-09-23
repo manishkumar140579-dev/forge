@@ -364,6 +364,29 @@ dialog[open] { animation: pop .18s ease both; }
 .priv-t { margin: 0; font-size: 16px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text); }
 .version { margin: 4px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
 
+/* Settings */
+.back { display: inline-flex; align-items: center; gap: 4px; height: 44px; color: var(--text-2); font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--inset); border: 1px solid var(--border); }
+.seg button { min-height: 44px; height: 44px; border-radius: 10px; border: 0; background: transparent; color: var(--text-2); font-weight: 600; font-size: 15px; }
+.seg button.on { background: var(--accent); color: var(--on-accent); }
+.swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 8px; }
+.swatch2 { width: 100%; aspect-ratio: 1; min-height: 0; border-radius: 50%; padding: 0; border: 3px solid transparent; }
+.swatch2.on { border-color: var(--text); }
+.set-row2 { display: flex; align-items: center; gap: 10px; min-height: 58px; }
+.set-row2.bt { border-top: 1px solid var(--border); }
+.sr-t { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.sr-val { width: 56px; text-align: center; font-family: var(--font-head); font-size: 18px; font-weight: 700; }
+.goal-row { display: flex; align-items: center; gap: 10px; min-height: 56px; }
+.goal-row + .goal-row { border-top: 1px solid var(--border); }
+.goal-name { flex: 1; font-weight: 600; font-size: 15px; }
+.goal-row input { width: 96px; height: 46px; min-height: 46px; padding: 0 10px; text-align: right; font-size: 16px; font-weight: 600; background: var(--inset); }
+.goal-unit { width: 44px; font-size: 13px; color: var(--muted); }
+.goals-cta { width: 100%; height: 50px; margin-top: 8px; }
+.grid2b { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid2b button, .wide-btn { font-size: 14px; }
+.reset-btn { width: 100%; height: 46px; min-height: 46px; border-radius: 12px; background: none; border: 1px solid var(--border-danger, #4a2326); color: var(--danger); font-weight: 600; font-size: 14px; }
+:root[data-theme="light"] .reset-btn { border-color: #f0c9cb; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }

@@ -31,6 +31,7 @@
     chevL: '<path d="M15 18l-6-6 6-6"></path>',
     chevR: '<path d="M9 18l6-6-6-6"></path>',
     plus: '<path d="M12 5v14M5 12h14"></path>',
+    minus: '<path d="M5 12h14"></path>',
     close: '<path d="M6 6l12 12M18 6L6 18"></path>',
     copy: '<rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>',
     shield: '<path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6l8-3z"></path>',
@@ -411,51 +412,42 @@
 
   // ---------- SETTINGS ----------
   function viewSettings() {
-    const s = Store.settings();
-    return `<h1>Settings</h1>
-      <div class="card">
-        <label>Weight unit</label>
-        <select id="set-unit">
-          <option value="kg" ${s.unit === "kg" ? "selected" : ""}>Kilograms (kg)</option>
-          <option value="lb" ${s.unit === "lb" ? "selected" : ""}>Pounds (lb)</option>
-        </select>
-        <label>Theme</label>
-        <select id="set-theme">
-          <option value="dark" ${s.theme === "dark" ? "selected" : ""}>Dark</option>
-          <option value="light" ${s.theme === "light" ? "selected" : ""}>Light</option>
-        </select>
-        <label>Accent colour</label>
-        <div class="row wrap">${ACCENTS.map(c =>
-          `<button class="swatch ${s.accent === c ? "on" : ""}" data-action="set-accent" data-c="${c}" style="background:${c}" aria-label="accent ${c}"></button>`).join("")}</div>
-        <label>Default rest timer (seconds)</label>
-        <input type="number" inputmode="numeric" data-setting="restDefault" value="${s.restDefault}">
-        <label>Quick +/- weight increment</label>
-        <input type="number" inputmode="decimal" data-setting="increment" value="${s.increment}">
-      </div>
-      <div class="card">
-        <div class="row between"><h2>Daily goals</h2>
-          <button class="btn-sm btn-blue" data-action="tdee">Calculate</button></div>
-        <div class="row">
-          <div class="grow"><label>Calories</label><input type="number" inputmode="numeric" data-goal="calories" value="${Store.goals().calories}"></div>
-          <div class="grow"><label>Water (glasses)</label><input type="number" inputmode="numeric" data-goal="water" value="${Store.goals().water}"></div>
-        </div>
-        <div class="row">
-          <div class="grow"><label>Protein (g)</label><input type="number" inputmode="numeric" data-goal="protein" value="${Store.goals().protein}"></div>
-          <div class="grow"><label>Carbs (g)</label><input type="number" inputmode="numeric" data-goal="carbs" value="${Store.goals().carbs}"></div>
-          <div class="grow"><label>Fat (g)</label><input type="number" inputmode="numeric" data-goal="fat" value="${Store.goals().fat}"></div>
-        </div>
-      </div>
-      <div class="card">
-        <h2>Backup</h2>
-        <div class="row wrap">
-          <button data-action="export">Export JSON</button>
-          <button data-action="export-csv">Export CSV</button>
-          <button data-action="import">Import JSON</button>
-          <button data-action="import-csv">Import workouts (CSV)</button>
-          <button class="btn-danger" data-action="reset">Reset all</button>
-        </div>
-      </div>
-      <p class="fab-note">Forge · your data stays on this device (offline-first PWA).</p>`;
+    const s = Store.settings(), g = Store.goals();
+    const seg = (action, cur, opts) => `<div class="seg">${opts.map(([v, l]) =>
+      `<button class="${cur === v ? "on" : ""}" data-action="${action}" data-v="${v}">${l}</button>`).join("")}</div>`;
+    const goalRow = (key, label, ul) => `<label class="goal-row"><span class="goal-name">${label}</span>
+      <input type="number" inputmode="numeric" data-goal="${key}" value="${g[key]}"><span class="goal-unit">${ul}</span></label>`;
+    let h = `<a class="back" href="#/more">${svgIcon("chevL")}More</a><h1>Settings</h1>`;
+    h += `<section class="card">
+      <h2>Weight unit</h2>${seg("set-unit-seg", s.unit, [["kg", "Kilograms (kg)"], ["lb", "Pounds (lb)"]])}
+      <p class="cap">Switching converts everything you've already logged.</p></section>`;
+    h += `<section class="card">
+      <h2>Appearance</h2>${seg("set-theme-seg", s.theme, [["dark", "Dark"], ["light", "Light"]])}
+      <div style="margin-top:4px"><span class="goal-name">Accent colour</span>
+        <div class="swatches">${ACCENTS.map(c =>
+          `<button class="swatch2${s.accent === c ? " on" : ""}" data-action="set-accent" data-c="${c}" style="background:${c}" aria-label="accent"></button>`).join("")}</div></div></section>`;
+    h += `<section class="card">
+      <h2>Training</h2>
+      <div class="set-row2"><span class="sr-t"><span class="goal-name">Rest between sets</span><span class="cap">Timer starts after each set</span></span>
+        <button class="daybtn" data-action="rest-dec" aria-label="Shorter rest">${svgIcon("minus")}</button>
+        <span class="sr-val">${Math.floor(s.restDefault / 60)}:${String(s.restDefault % 60).padStart(2, "0")}</span>
+        <button class="daybtn" data-action="rest-inc" aria-label="Longer rest">${svgIcon("plus")}</button></div>
+      <div class="set-row2 bt"><span class="sr-t"><span class="goal-name">Weight step</span><span class="cap">How much + and − change</span></span>
+        <button class="daybtn" data-action="inc-dec" aria-label="Smaller step">${svgIcon("minus")}</button>
+        <span class="sr-val">${s.increment} ${s.unit}</span>
+        <button class="daybtn" data-action="inc-inc" aria-label="Bigger step">${svgIcon("plus")}</button></div></section>`;
+    h += `<section class="card">
+      <h2>Daily goals</h2>
+      ${goalRow("calories", "Calories", "kcal")}${goalRow("protein", "Protein", "g")}${goalRow("carbs", "Carbs", "g")}${goalRow("fat", "Fat", "g")}${goalRow("water", "Water", "glasses")}
+      <button class="btn-accent goals-cta" data-action="tdee">Work out my goals for me</button>
+      <p class="cap" style="text-align:center;margin-top:4px">Uses your age, height, weight and activity (TDEE).</p></section>`;
+    h += `<section class="card">
+      <h2>Backup</h2>
+      <div class="grid2b"><button data-action="export">Export JSON</button><button data-action="export-csv">Export CSV</button></div>
+      <button class="wide-btn" data-action="import" style="margin-top:8px">Import a backup</button>
+      <button class="wide-btn" data-action="import-csv" style="margin-top:8px">Import workouts (CSV)</button>
+      <button class="reset-btn" data-action="reset" style="margin-top:8px">Reset all data</button></section>`;
+    return h;
   }
 
   // ---------- STATS ----------
@@ -751,6 +743,22 @@
         return render();
       }
       case "set-accent": Store.setSetting("accent", a.c); applyTheme(); return render();
+      case "set-unit-seg": {
+        const to = a.v;
+        if (to === Store.settings().unit) return;
+        if (confirm(`Convert your existing weights to ${to}?`)) Store.convertUnits(to); else Store.setSetting("unit", to);
+        return render();
+      }
+      case "set-theme-seg": Store.setSetting("theme", a.v); applyTheme(); return render();
+      case "rest-dec": Store.setSetting("restDefault", Math.max(15, Store.settings().restDefault - 15)); return render();
+      case "rest-inc": Store.setSetting("restDefault", Math.min(600, Store.settings().restDefault + 15)); return render();
+      case "inc-dec": case "inc-inc": {
+        const steps = [1, 1.25, 2.5, 5];
+        let i = steps.indexOf(Store.settings().increment); if (i < 0) i = 2;
+        i = a.action === "inc-inc" ? Math.min(steps.length - 1, i + 1) : Math.max(0, i - 1);
+        Store.setSetting("increment", steps[i]);
+        return render();
+      }
       case "tdee": return tdeeModal();
       case "one-rm-tool": return oneRMToolModal();
       case "add-measurement": {
