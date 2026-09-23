@@ -21,10 +21,15 @@ Clean-room build inspired by the GPL app "Iron" — **no GPL code is used**, so 
 - **Medication:** daily checklist on Today (tick off per day) + Manage modal (add name/dose, delete).
 - **Steps:** Today card with goal progress + Settings goal. Manual entry for now; `Store.setSteps(date, n)` is the hook the Health integration will call.
 
+## 📱 Native app (Capacitor) — in progress
+- **Phase 1 scaffold done:** `capacitor.config.json`, `scripts/sync-www.mjs` (root → `www/`), `package.json` deps, and the generated Android project. See **`MOBILE.md`** for the full roadmap + build steps.
+- **To build the APK (your machine):** install **JDK 17** (env here has Java 8) + **Android Studio**, then `npm install && npm run cap:add:android && npm run cap:open:android`.
+- **Next (Phase 2):** Android Health Connect / iOS HealthKit plugin → call `Store.setSteps()` for step auto-sync.
+
 ## ⏳ Pending — needs money / infrastructure (not built)
 - **Cloud sync / multi-device accounts** — needs a hosted backend (free tier: Supabase or Firebase).
-- **Step count auto-sync** — Steps UI is built; wiring **Apple Health / Google Fit (Health Connect)** to feed `Store.setSteps()` needs the native wrapper below.
-- **Apple Watch · Siri · home-screen widget · iCloud · HealthKit** — need a native wrapper (Capacitor, ~$99/yr Apple Developer).
+- **Play Store $25 once · App Store needs a Mac + Apple Developer $99/yr.**
+- **Apple Watch · Siri · home-screen widget · iCloud · HealthKit** — build on top of the Capacitor shell above.
 - **AI features** (natural-language / photo food logging, AI program generator) — need an API key (e.g. Claude API).
 
 ## ❓ Open decision

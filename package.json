@@ -1,0 +1,20 @@
+{
+  "name": "forge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Forge — offline-first workout + nutrition tracker. Web app (GitHub Pages) wrapped by Capacitor for Android/iOS.",
+  "scripts": {
+    "test": "node calc.test.js",
+    "sync-www": "node scripts/sync-www.mjs",
+    "cap:add:android": "npm run sync-www && npx cap add android",
+    "cap:add:ios": "npm run sync-www && npx cap add ios",
+    "cap:sync": "npm run sync-www && npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
+  }
+}
