@@ -111,7 +111,7 @@
     ];
   }
 
-  const DEFAULT_GOALS = { calories: 2200, protein: 150, carbs: 220, fat: 70, water: 8 };
+  const DEFAULT_GOALS = { calories: 2200, protein: 150, carbs: 220, fat: 70, water: 8, steps: 8000 };
 
   const MEAS_PARTS = ["Waist", "Chest", "Arms", "Thighs", "Hips", "Neck"];
 
@@ -127,6 +127,10 @@
       foodLog: [],       // [{id, date, meal, name, grams, per100:{kcal,p,c,f,fiber,sugar,sodium}}]
       foodLibrary: [],   // reusable saved foods [{id, name, per100, serving}]
       water: {},         // { "YYYY-MM-DD": glasses }
+      steps: {},         // { "YYYY-MM-DD": count }  (fed by Apple Health / Google Fit; manual fallback)
+      medications: [],   // [{id, name, dose}]
+      medLog: {},        // { "YYYY-MM-DD": [medId,...] }  taken that day
+      savedMeals: [],    // reusable meals [{id, name, items:[{name, grams, per100}]}]
       programs: [],      // [{id, name, dayRoutineIds:[], pos}]
       active: null,      // the in-progress workout, or null
     };
@@ -150,6 +154,10 @@
     s.foodLog = s.foodLog || [];
     s.foodLibrary = s.foodLibrary || [];
     s.water = s.water || {};
+    s.steps = s.steps || {};
+    s.medications = s.medications || [];
+    s.medLog = s.medLog || {};
+    s.savedMeals = s.savedMeals || [];
     s.programs = s.programs || [];
     if (!("active" in s)) s.active = null;
     s.exercises.forEach(x => { if (!x.kind) x.kind = "weight"; });
@@ -224,8 +232,9 @@
   }
 
   // ---- routines (reusable templates: a named list of exercises) ----
-  function addRoutine({ name, exerciseIds }) {
+  function addRoutine({ name, exerciseIds, targets }) {
     const r = { id: uid(), name: name.trim(), exerciseIds: exerciseIds || [] };
+    if (targets && Object.keys(targets).length) r.targets = targets; // { exerciseId: {sets, reps} }
     state.routines.push(r);
     save();
     return r;
@@ -248,7 +257,7 @@
     let name = timeOfDayName();
     if (routineId) {
       const r = state.routines.find(x => x.id === routineId);
-      if (r) { r.exerciseIds.forEach(eid => entries.push(newEntry(eid))); name = r.name; }
+      if (r) { r.exerciseIds.forEach(eid => entries.push(newEntry(eid, r.targets && r.targets[eid]))); name = r.name; }
     }
     state.active = { id: uid(), name, date: date || dayKey(), start: Date.now(), end: null, entries };
     save();
@@ -262,12 +271,21 @@
   }
   // Smart logging: a new exercise mirrors your last session for it (values
   // pre-filled but not marked done), so you rarely change them. — Iron's signature.
-  function newEntry(exerciseId) {
+  function newEntry(exerciseId, target) {
     const ex = exercise(exerciseId) || {};
     const kind = ex.kind || "weight";
     const last = lastPerformance(exerciseId);
     let sets;
-    if (last && last.sets.length) {
+    if (target && target.sets > 0) {
+      // Routine target: N sets with target reps; weight carried over from last time if known.
+      const lastW = last && last.sets.length ? (last.sets[last.sets.length - 1].weight || 0) : 0;
+      sets = Array.from({ length: target.sets }, () => {
+        const ns = newSet(kind);
+        if ("reps" in ns && target.reps) ns.reps = +target.reps;
+        if ("weight" in ns && lastW) ns.weight = lastW;
+        return ns;
+      });
+    } else if (last && last.sets.length) {
       sets = last.sets.map(s => {
         const ns = newSet(kind);
         ["weight", "reps", "seconds", "distance"].forEach(f => { if (f in ns && f in s) ns[f] = s[f]; });
@@ -515,6 +533,45 @@
   function setWater(date, n) { state.water[date] = Math.max(0, n | 0); save(); }
   function addWater(date, delta) { setWater(date, getWater(date) + delta); }
 
+  // ---- steps (Apple Health / Google Fit will call setSteps; manual entry is the fallback) ----
+  function getSteps(date) { return state.steps[date] || 0; }
+  function setSteps(date, n) { state.steps[date] = Math.max(0, Math.round(+n) || 0); save(); }
+
+  // ---- medications (a daily checklist) ----
+  function medications() { return state.medications; }
+  function addMedication({ name, dose }) {
+    if (!name || !name.trim()) return null;
+    const m = { id: uid(), name: name.trim(), dose: (dose || "").trim() };
+    state.medications.push(m); save(); return m;
+  }
+  function deleteMedication(id) {
+    state.medications = state.medications.filter(m => m.id !== id);
+    Object.keys(state.medLog).forEach(d => { state.medLog[d] = state.medLog[d].filter(x => x !== id); });
+    save();
+  }
+  function medTaken(date, id) { return (state.medLog[date] || []).includes(id); }
+  function toggleMed(date, id) {
+    const arr = state.medLog[date] || (state.medLog[date] = []);
+    const i = arr.indexOf(id);
+    if (i >= 0) arr.splice(i, 1); else arr.push(id);
+    save();
+  }
+
+  // ---- saved meals (reusable bundles of foods) ----
+  function savedMeals() { return state.savedMeals; }
+  function addSavedMeal({ name, items }) {
+    if (!name || !name.trim() || !items || !items.length) return null;
+    const m = { id: uid(), name: name.trim(), items: items.map(it => ({ name: it.name, grams: +it.grams || 0, per100: { ...it.per100 } })) };
+    state.savedMeals.push(m); save(); return m;
+  }
+  function deleteSavedMeal(id) { state.savedMeals = state.savedMeals.filter(m => m.id !== id); save(); }
+  function logSavedMeal(id, date, meal) {
+    const m = state.savedMeals.find(x => x.id === id);
+    if (!m) return 0;
+    m.items.forEach(it => addFood({ date, meal, name: it.name, grams: it.grams, per100: it.per100 }));
+    return m.items.length;
+  }
+
   // ---- body measurements ----
   function measurements() { return state.measurements; }
   function measurementsByPart(part) {
@@ -553,6 +610,8 @@
     return state.workouts.some(w => w.date === date)
       || state.foodLog.some(f => f.date === date)
       || (state.water[date] > 0)
+      || (state.steps[date] > 0)
+      || ((state.medLog[date] || []).length > 0)
       || state.bodyweights.some(b => dayKey(b.date) === date);
   }
   function streak() {
@@ -640,6 +699,9 @@
     bodyweights, addBodyweight, deleteBodyweight, convertUnits,
     foodByDate, addFood, removeFood, restoreFood, foodLibrary, saveFood, deleteLibraryFood, searchLibrary,
     getWater, setWater, addWater, dayHasActivity, streak,
+    getSteps, setSteps,
+    medications, addMedication, deleteMedication, medTaken, toggleMed,
+    savedMeals, addSavedMeal, deleteSavedMeal, logSavedMeal,
     lastPerformance, exportJSON, exportCSV, importJSON, reset,
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

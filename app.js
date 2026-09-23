@@ -186,6 +186,24 @@
         <div class="water-track">${Array.from({ length: g.water }, (_, i) => `<span class="drop ${i < water ? "full" : ""}"></span>`).join("")}</div>
         <button class="daybtn" data-action="water-plus" aria-label="more water">${svgIcon("plus")}</button>
       </div></section>`;
+    const steps = Store.getSteps(curDate), sGoal = g.steps || 0;
+    h += `<section class="card">
+      <div class="card-hd"><h2>Steps</h2><span class="cap">${nf(steps)}${sGoal ? " of " + nf(sGoal) : ""}</span></div>
+      <div class="bar"><div class="bar-fill" style="width:${sGoal ? Math.min(100, steps / sGoal * 100) : 0}%;background:var(--accent-2)"></div></div>
+      <div class="row" style="margin-top:10px"><input id="steps-input" inputmode="numeric" placeholder="Log steps" value="${steps || ""}">
+        <button class="btn-blue" data-action="set-steps">Save</button></div>
+      <p class="cap" style="margin-top:6px">Syncs from Apple Health / Google Fit once connected.</p></section>`;
+    const meds = Store.medications();
+    h += `<section class="card"><div class="card-hd"><h2>Medication</h2><button class="btn-sm btn-ghost" data-action="manage-meds">Manage</button></div>`;
+    h += meds.length
+      ? `<div class="med-list">${meds.map(m => {
+          const taken = Store.medTaken(curDate, m.id);
+          return `<button class="med-row${taken ? " on" : ""}" data-action="toggle-med" data-id="${m.id}">
+            <span class="med-check">${taken ? svgIcon("check", 16, 2.8) : ""}</span>
+            <span class="med-t"><span class="med-name">${esc(m.name)}</span>${m.dose ? `<span class="cap">${esc(m.dose)}</span>` : ""}</span></button>`;
+        }).join("")}</div>`
+      : `<p class="cap">No medications yet. Tap Manage to add one.</p>`;
+    h += `</section>`;
     h += `<section class="card">
       <div class="card-hd"><h2>Training</h2><button class="btn-accent btn-sm" data-action="start-empty">Start workout</button></div>
       <p class="cap" style="font-size:14px">${wos.length} session${wos.length !== 1 ? "s" : ""} today · ${nf(vol)} ${u} volume</p></section>`;
@@ -273,6 +291,7 @@
         <div class="meal-hd">
           <h2 class="meal-title">${meal}</h2>
           <span class="cap">${nf(sub.kcal)} kcal</span>
+          ${items.length ? `<button class="btn-sm btn-ghost" data-action="save-meal" data-meal="${meal}">Save as meal</button>` : ""}
           <button class="add-btn${items.length ? " accent" : ""}" data-action="add-food" data-meal="${meal}" aria-label="Add food to ${meal}">${svgIcon("plus", 20, 2.4)}</button>
         </div>`;
       h += items.length
@@ -315,7 +334,7 @@
     const feat = (ic, t, s) => `<li class="wf"><span class="wf-ico">${svgIcon(ic, 22)}</span>
       <span class="wf-t"><span class="wf-title">${t}</span><span class="cap">${s}</span></span></li>`;
     return `<div class="welcome">
-      <div class="wbrand"><span class="wbrand-ico">${svgIcon("train", 22, 2.2)}</span><span class="wbrand-name">FORGE</span></div>
+      <div class="wbrand"><span class="wbrand-ico"><img src="icon.svg" width="48" height="48" alt=""></span><span class="wbrand-name">FORGE</span></div>
       <div><h1 class="wtitle">Train. Eat.<br>See progress.</h1>
         <p class="wlead">One simple app for your workouts and your food. No account needed — everything stays on your phone.</p></div>
       <ul class="wlist">
@@ -390,14 +409,18 @@
     h += `<h2>Your routines</h2>`;
     if (!rs.length) h += `<div class="empty">None yet — add a starter plan above or create your own.</div>`;
     h += rs.map(rt => {
-      const names = rt.exerciseIds.map(id => (Store.exercise(id) || {}).name).filter(Boolean);
+      const lines = rt.exerciseIds.map(id => {
+        const ex = Store.exercise(id); if (!ex) return null;
+        const t = rt.targets && rt.targets[id];
+        return esc(ex.name) + (t && t.sets ? ` <span class="muted">${t.sets}×${t.reps || "–"}</span>` : "");
+      }).filter(Boolean);
       return `<div class="card">
         <div class="row between"><strong>${esc(rt.name)}</strong>
           <div class="row">
             <button class="btn-sm btn-ghost" data-action="share-routine" data-id="${rt.id}">Share</button>
             <button class="btn-sm btn-danger btn-ghost" data-action="del-routine" data-id="${rt.id}">✕</button>
           </div></div>
-        <p class="muted">${names.map(esc).join(" · ") || "no exercises"}</p>
+        <p class="muted">${lines.join(" · ") || "no exercises"}</p>
         <button class="btn-blue btn-full" data-action="start-routine" data-id="${rt.id}">Start workout</button>
       </div>`;
     }).join("");
@@ -472,7 +495,7 @@
         <button class="daybtn" data-action="inc-inc" aria-label="Bigger step">${svgIcon("plus")}</button></div></section>`;
     h += `<section class="card">
       <h2>Daily goals</h2>
-      ${goalRow("calories", "Calories", "kcal")}${goalRow("protein", "Protein", "g")}${goalRow("carbs", "Carbs", "g")}${goalRow("fat", "Fat", "g")}${goalRow("water", "Water", "glasses")}
+      ${goalRow("calories", "Calories", "kcal")}${goalRow("protein", "Protein", "g")}${goalRow("carbs", "Carbs", "g")}${goalRow("fat", "Fat", "g")}${goalRow("water", "Water", "glasses")}${goalRow("steps", "Steps", "steps")}
       <button class="btn-accent goals-cta" data-action="tdee">Work out my goals for me</button>
       <p class="cap" style="text-align:center;margin-top:4px">Uses your age, height, weight and activity (TDEE).</p></section>`;
     h += `<section class="card">
@@ -888,6 +911,10 @@
       case "date-today": curDate = Store.dayKey(); return render();
       case "water-plus": Store.addWater(curDate, 1); return render();
       case "water-minus": Store.addWater(curDate, -1); return render();
+      case "set-steps": { const el = appEl.querySelector("#steps-input"); if (el) { Store.setSteps(curDate, el.value); render(); } return; }
+      case "toggle-med": Store.toggleMed(curDate, a.id); return render();
+      case "manage-meds": return manageMedsModal();
+      case "save-meal": return saveMealModal(a.meal);
       case "add-food": return addFoodModal(a.meal);
       case "del-food": {
         const f = Store.get().foodLog.find(x => x.id === a.id);
@@ -1139,10 +1166,11 @@
     openModal(`<form method="dialog" class="card" style="min-width:300px;max-height:80vh;overflow:auto">
       <h2>New routine</h2>
       <label>Name</label><input id="rt-name" placeholder="Push Day" required>
-      <label>Pick exercises</label>
+      <label>Tick exercises, then set target sets × reps</label>
       <div id="rt-list">${list.map(x =>
-        `<label class="row" style="margin:6px 0"><input type="checkbox" style="width:auto" value="${x.id}">
-          <span>${esc(x.name)} <span class="muted">${esc(x.muscle)}</span></span></label>`
+        `<div class="rt-pick"><label class="rt-pick-l"><input type="checkbox" class="rt-chk" value="${x.id}">
+          <span>${esc(x.name)} <span class="muted">${esc(x.muscle)}</span></span></label>
+          <span class="rt-tgt"><input class="rt-sets" type="number" inputmode="numeric" min="1" placeholder="3" aria-label="target sets for ${esc(x.name)}"><span class="muted">×</span><input class="rt-reps" type="number" inputmode="numeric" min="1" placeholder="8" aria-label="target reps for ${esc(x.name)}"></span></div>`
       ).join("")}</div>
       <div class="spacer"></div>
       <div class="row"><span class="grow"></span>
@@ -1152,8 +1180,17 @@
     modal.querySelector("#rt-save").onclick = () => {
       const name = modal.querySelector("#rt-name").value.trim();
       if (!name) return;
-      const ids = [...modal.querySelectorAll("#rt-list input:checked")].map(c => c.value);
-      Store.addRoutine({ name, exerciseIds: ids });
+      const ids = [], targets = {};
+      modal.querySelectorAll(".rt-pick").forEach(row => {
+        const chk = row.querySelector(".rt-chk");
+        if (!chk.checked) return;
+        ids.push(chk.value);
+        const sets = parseInt(row.querySelector(".rt-sets").value, 10);
+        const reps = parseInt(row.querySelector(".rt-reps").value, 10);
+        if (sets > 0) targets[chk.value] = { sets, reps: reps > 0 ? reps : 0 };
+      });
+      if (!ids.length) { alert("Pick at least one exercise."); return; }
+      Store.addRoutine({ name, exerciseIds: ids, targets });
       modal.close(); render();
     };
   }
@@ -1349,6 +1386,7 @@
       <div class="af-tabs" role="group" aria-label="Where to look">
         <button class="af-tab on" data-tab="recent" aria-pressed="true">Recent</button>
         <button class="af-tab" data-tab="mine" aria-pressed="false">My foods</button>
+        <button class="af-tab" data-tab="meals" aria-pressed="false">Meals</button>
         <button class="af-tab" data-tab="online" aria-pressed="false">Online</button>
       </div>
       <div class="af-list" id="food-results"></div>
@@ -1374,6 +1412,18 @@
       } else if (tab === "mine") {
         const items = Store.searchLibrary(term).map(f => ({ name: f.name, per100: f.per100, serving: f.serving }));
         results.innerHTML = items.length ? items.map(rowHTML).join("") : empty(term ? "No saved foods match." : "No saved foods yet — anything you add is saved here.");
+      } else if (tab === "meals") {
+        const meals = Store.savedMeals().filter(m => !term || m.name.toLowerCase().includes(term.toLowerCase()));
+        let html = `<button type="button" class="af-newmeal" data-newmeal>${svgIcon("plus", 18, 2.4)} New custom meal</button>`;
+        html += meals.length ? meals.map(m => {
+          const t = m.items.reduce((a, it) => { const mm = Calc.foodMacros(it); a.kcal += mm.kcal; a.p += mm.p; a.c += mm.c; a.f += mm.f; return a; }, { kcal: 0, p: 0, c: 0, f: 0 });
+          return `<div class="af-item af-meal"><button type="button" class="af-meal-log" data-savedmeal="${m.id}">
+              <span class="af-item-t"><span class="af-item-name">${esc(m.name)}</span>
+                <span class="af-item-macros">${m.items.length} item${m.items.length !== 1 ? "s" : ""} · ${Math.round(t.kcal)} kcal · P ${num1(t.p)} · C ${num1(t.c)} · F ${num1(t.f)}</span></span>
+              <span class="af-item-add">${svgIcon("plus", 18, 2.4)}</span></button>
+            <button type="button" class="af-meal-del" data-delmeal="${m.id}" aria-label="Delete ${esc(m.name)}">${svgIcon("close", 16)}</button></div>`;
+        }).join("") : empty(term ? "No saved meals match." : "No saved meals yet. Log a meal then tap “Save as meal” on Fuel, or add one here.");
+        results.innerHTML = html;
       } else {
         if (term.length < 2) { results.innerHTML = empty("Type at least 2 letters to search Open Food Facts."); return; }
         const my = ++token;
@@ -1392,8 +1442,13 @@
     }));
     q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(draw, tab === "online" ? 350 : 60); });
     results.addEventListener("click", (e) => {
-      const b = e.target.closest("[data-food]");
-      if (b) portionModal(meal, JSON.parse(decodeURIComponent(b.dataset.food)));
+      const food = e.target.closest("[data-food]");
+      if (food) return portionModal(meal, JSON.parse(decodeURIComponent(food.dataset.food)));
+      const log = e.target.closest("[data-savedmeal]");
+      if (log) { const n = Store.logSavedMeal(log.dataset.savedmeal, curDate, meal); modal.close(); render(); showToast(`Added ${n} item${n !== 1 ? "s" : ""} to ${meal}`); return; }
+      const del = e.target.closest("[data-delmeal]");
+      if (del) { Store.deleteSavedMeal(del.dataset.delmeal); draw(); return; }
+      if (e.target.closest("[data-newmeal]")) return newCustomMealModal(meal);
     });
     modal.querySelector("#food-manual").onclick = () => manualFoodModal(meal);
     modal.querySelector("#food-scan").onclick = () => barcodeScanModal(meal);
@@ -1573,6 +1628,79 @@
       if (!val) return;
       Store.addMeasurement({ part, value: val });
       modal.close(); render();
+    };
+  }
+
+  function manageMedsModal() {
+    const listHTML = () => Store.medications().map(m =>
+      `<div class="list-item"><span><strong>${esc(m.name)}</strong>${m.dose ? ` <span class="muted">${esc(m.dose)}</span>` : ""}</span>
+        <button class="btn-sm btn-danger btn-ghost" data-mdel="${m.id}" aria-label="Delete ${esc(m.name)}">✕</button></div>`
+    ).join("") || `<p class="muted">No medications yet.</p>`;
+    openModal(`<div class="card" style="min-width:300px;max-height:85vh;overflow:auto">
+      <div class="row between"><h2>Medications</h2><button data-action="modal-close" class="btn-sm">Done</button></div>
+      <div id="med-list">${listHTML()}</div>
+      <div class="spacer"></div>
+      <label>Add medication</label>
+      <div class="row"><input id="med-name" placeholder="Name, e.g. Vitamin D"><input id="med-dose" placeholder="Dose" style="max-width:110px"></div>
+      <button class="btn-accent btn-full" id="med-add" style="margin-top:10px">Add</button>
+    </div>`);
+    const list = modal.querySelector("#med-list");
+    modal.querySelector("#med-add").onclick = () => {
+      const nameEl = modal.querySelector("#med-name"), doseEl = modal.querySelector("#med-dose");
+      if (!nameEl.value.trim()) return;
+      Store.addMedication({ name: nameEl.value, dose: doseEl.value });
+      nameEl.value = ""; doseEl.value = ""; nameEl.focus();
+      list.innerHTML = listHTML(); render();
+    };
+    list.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-mdel]"); if (!b) return;
+      Store.deleteMedication(b.dataset.mdel); list.innerHTML = listHTML(); render();
+    });
+  }
+
+  // Save a day's logged meal slot as a reusable saved meal.
+  function saveMealModal(meal) {
+    const items = Store.foodByDate(curDate).filter(f => f.meal === meal).map(f => ({ name: f.name, grams: f.grams, per100: f.per100 }));
+    if (!items.length) { alert("Log some food to this meal first, then save it."); return; }
+    openModal(`<div class="card" style="min-width:280px">
+      <h2>Save “${esc(meal)}” as a meal</h2>
+      <p class="cap">${items.length} item${items.length !== 1 ? "s" : ""} from ${esc(meal.toLowerCase())} today.</p>
+      <label>Meal name</label><input id="sm-name" value="${esc(meal + " · " + shortDate(Date.now()))}" autofocus>
+      <div class="spacer"></div>
+      <div class="row"><span class="grow"></span><button data-action="modal-close">Cancel</button>
+        <button class="btn-accent" id="sm-save">Save</button></div>
+    </div>`);
+    modal.querySelector("#sm-save").onclick = () => {
+      const name = modal.querySelector("#sm-name").value.trim();
+      if (!name) return;
+      Store.addSavedMeal({ name, items });
+      modal.close(); showToast("Saved meal “" + name + "”");
+    };
+  }
+
+  // Create a saved meal from custom total nutrition (a single-item bundle).
+  function newCustomMealModal(meal) {
+    openModal(`<form method="dialog" class="card" style="min-width:280px">
+      <h2>New custom meal</h2>
+      <label>Name</label><input id="cm-name" placeholder="Chicken & rice bowl" required>
+      <div class="row"><div class="grow"><label>Calories</label><input id="cm-kcal" inputmode="decimal"></div>
+        <div class="grow"><label>Protein (g)</label><input id="cm-p" inputmode="decimal"></div></div>
+      <div class="row"><div class="grow"><label>Carbs (g)</label><input id="cm-c" inputmode="decimal"></div>
+        <div class="grow"><label>Fat (g)</label><input id="cm-f" inputmode="decimal"></div></div>
+      <p class="muted" style="font-size:12px">Totals for the whole meal. Saved so you can log it in one tap.</p>
+      <div class="spacer"></div>
+      <div class="row"><span class="grow"></span><button type="button" data-action="modal-close">Cancel</button>
+        <button type="button" class="btn-accent" id="cm-save">Save</button></div>
+    </form>`);
+    modal.querySelector("#cm-save").onclick = () => {
+      const name = modal.querySelector("#cm-name").value.trim();
+      if (!name) return;
+      const per100 = {
+        kcal: +modal.querySelector("#cm-kcal").value || 0, p: +modal.querySelector("#cm-p").value || 0,
+        c: +modal.querySelector("#cm-c").value || 0, f: +modal.querySelector("#cm-f").value || 0,
+      };
+      Store.addSavedMeal({ name, items: [{ name, grams: 100, per100 }] }); // grams=100 → totals == entered
+      addFoodModal(meal); // back to the sheet
     };
   }
 

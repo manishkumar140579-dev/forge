@@ -15,10 +15,15 @@ Clean-room build inspired by the GPL app "Iron" — **no GPL code is used**, so 
 - **App icon:** flame + barbell, light/dark adaptive (`icon.svg` + PNGs).
 - **UI rebuilt 1:1 to the design mockups:** Welcome · Today · Train · Workout · Fuel · AddFood · Portion · More · Progress · Settings + shared shell (SVG tab bar, Archivo/IBM Plex fonts, solid cards, tokens). Bottom-sheet modals.
 - **Progress screen:** value+delta chart cards (gridlines + endpoint dot), exercise-progress stat tiles, ranked PR list, activity heatmap w/ active-day count, measurement tiles + log modal, inline 1RM calculator.
-- **Add-food sheet:** Recent / My foods / Online segmented tabs, search box + barcode button, food rows, manual-entry.
+- **Add-food sheet:** Recent / My foods / Meals / Online segmented tabs, search box + barcode button, food rows, manual-entry.
+- **Workout plans:** routines carry optional target **sets × reps** per exercise (set in the routine builder); starting the routine pre-fills that many sets with the target reps (weight carried from last time).
+- **Saved meals:** reusable meal bundles — "Save as meal" from any Fuel meal slot, or "New custom meal" (custom totals); log the whole meal in one tap from the Add-food **Meals** tab.
+- **Medication:** daily checklist on Today (tick off per day) + Manage modal (add name/dose, delete).
+- **Steps:** Today card with goal progress + Settings goal. Manual entry for now; `Store.setSteps(date, n)` is the hook the Health integration will call.
 
 ## ⏳ Pending — needs money / infrastructure (not built)
 - **Cloud sync / multi-device accounts** — needs a hosted backend (free tier: Supabase or Firebase).
+- **Step count auto-sync** — Steps UI is built; wiring **Apple Health / Google Fit (Health Connect)** to feed `Store.setSteps()` needs the native wrapper below.
 - **Apple Watch · Siri · home-screen widget · iCloud · HealthKit** — need a native wrapper (Capacitor, ~$99/yr Apple Developer).
 - **AI features** (natural-language / photo food logging, AI program generator) — need an API key (e.g. Claude API).
 
@@ -30,7 +35,7 @@ Clean-room build inspired by the GPL app "Iron" — **no GPL code is used**, so 
 ## How to work on it
 - **Run locally:** `cd Forge && python -m http.server 8000` → open http://localhost:8000
 - **Tests:** `node calc.test.js` · **Syntax:** `node --check calc.js store.js app.js sw.js`
-- **After any change to app files, bump `CACHE` in `sw.js`** (e.g. `forge-v14` → `v15`) so clients update.
+- **After any change to app files, bump `CACHE` in `sw.js`** (currently `forge-v16` → `v17`) so clients update.
 - **Deploy:** `git add -A && git commit -m "..." && git push` → GitHub Actions builds Pages (~1 min). `gh` CLI: `"C:\Program Files\GitHub CLI\gh.exe"`.
 - **Files:** `index.html`, `app.css`, `calc.js` (pure math + tests), `store.js` (localStorage data), `app.js` (UI/router), `qrcode.js` (vendored), `sw.js` (service worker), `design/` (mockups + tokens).
 
