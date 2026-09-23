@@ -194,6 +194,7 @@
       <div><span class="muted">P</span><br><strong>${Math.round(totals.p)}g</strong></div>
       <div><span class="muted">C</span><br><strong>${Math.round(totals.c)}g</strong></div>
       <div><span class="muted">F</span><br><strong>${Math.round(totals.f)}g</strong></div></div>`;
+    h += `<button class="btn-sm btn-ghost btn-full" data-action="copy-yesterday" style="margin-bottom:12px">⧉ Copy yesterday's meals</button>`;
     MEALS.forEach(meal => {
       const items = food.filter(f => f.meal === meal);
       const sub = Calc.dayMacros(items);
@@ -334,13 +335,17 @@
           <option value="dark" ${s.theme === "dark" ? "selected" : ""}>Dark</option>
           <option value="light" ${s.theme === "light" ? "selected" : ""}>Light</option>
         </select>
+        <label>Accent colour</label>
+        <div class="row wrap">${ACCENTS.map(c =>
+          `<button class="swatch ${s.accent === c ? "on" : ""}" data-action="set-accent" data-c="${c}" style="background:${c}" aria-label="accent ${c}"></button>`).join("")}</div>
         <label>Default rest timer (seconds)</label>
         <input type="number" inputmode="numeric" data-setting="restDefault" value="${s.restDefault}">
         <label>Quick +/- weight increment</label>
         <input type="number" inputmode="decimal" data-setting="increment" value="${s.increment}">
       </div>
       <div class="card">
-        <h2>Daily goals</h2>
+        <div class="row between"><h2>Daily goals</h2>
+          <button class="btn-sm btn-blue" data-action="tdee">Calculate</button></div>
         <div class="row">
           <div class="grow"><label>Calories</label><input type="number" inputmode="numeric" data-goal="calories" value="${Store.goals().calories}"></div>
           <div class="grow"><label>Water (glasses)</label><input type="number" inputmode="numeric" data-goal="water" value="${Store.goals().water}"></div>
@@ -376,6 +381,30 @@
     return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
       <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/>
     </svg><div class="row between muted" style="font-size:12px"><span>${min}</span><span>${max}</span></div>`;
+  }
+
+  function heatmapHTML() {
+    const days = 7 * 15, cells = [], today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const key = Store.dayKey(d.getTime());
+      cells.push(`<span class="hm ${Store.dayHasActivity(key) ? "on" : ""}" title="${key}"></span>`);
+    }
+    return `<div class="heatmap">${cells.join("")}</div>`;
+  }
+  function measurementsCard() {
+    const parts = Store.MEAS_PARTS;
+    let h = `<div class="card"><h2>Body measurements</h2>
+      <div class="row">
+        <select id="meas-part" class="grow">${parts.map(p => `<option>${p}</option>`).join("")}</select>
+        <input id="meas-val" style="max-width:90px" inputmode="decimal" placeholder="cm">
+        <button class="btn-blue" data-action="add-measurement">Log</button>
+      </div>`;
+    const latest = parts.map(p => { const a = Store.measurementsByPart(p); return a.length ? { part: p, v: a[a.length - 1].value, series: a.map(x => x.value) } : null; }).filter(Boolean);
+    const charted = latest.slice().sort((a, b) => b.series.length - a.series.length)[0];
+    if (charted && charted.series.length >= 2) h += `<div class="spacer"></div><div class="muted" style="font-size:13px">${charted.part} trend</div>${lineChart(charted.series)}`;
+    if (latest.length) h += latest.map(l => `<div class="list-item"><span>${l.part}</span><strong>${l.v} cm</strong></div>`).join("");
+    return h + `</div>`;
   }
 
   let statEx = null;
@@ -431,6 +460,9 @@
         `<div class="list-item"><div><strong>${i + 1}. ${esc(r.name)}</strong></div>
           <span class="tag">${r.oneRM} ${u} 1RM</span></div>`).join("") + `</div>`;
     }
+    h += `<div class="card"><div class="row between"><h2>Activity</h2><span class="muted">last 15 weeks</span></div>${heatmapHTML()}</div>`;
+    h += measurementsCard();
+    h += `<button class="btn-ghost btn-full" data-action="one-rm-tool">🧮 1RM & % calculator</button>`;
     return h;
   }
 
@@ -468,6 +500,7 @@
         ${entry.sets.map((set, j) => setRow(i, j, set, kind)).join("")}
         <div class="row" style="margin-top:8px">
           <button class="btn-sm btn-ghost grow" data-action="add-set" data-e="${i}">＋ Add set</button>
+          ${kind === "weight" ? `<button class="btn-sm btn-ghost" data-action="warmup" data-e="${i}" title="Add warm-up sets" aria-label="add warm-up sets">🔥</button>` : ""}
           <button class="btn-sm btn-ghost" data-action="entry-note" data-e="${i}" aria-label="add note">📝</button>
         </div>
         ${entry.note ? `<p class="muted" style="font-size:13px;margin-top:8px">📝 ${esc(entry.note)}</p>` : ""}
@@ -565,8 +598,11 @@
       el.addEventListener("change", () => Store.setGoal(el.dataset.goal, el.value)));
   }
 
+  const ACCENTS = ["#ff6a3d", "#4f8cff", "#34d399", "#a855f7", "#ec4899", "#f5c451"];
   function applyTheme() {
-    document.documentElement.dataset.theme = Store.settings().theme || "dark";
+    const s = Store.settings();
+    document.documentElement.dataset.theme = s.theme || "dark";
+    document.documentElement.style.setProperty("--accent", s.accent || "#ff6a3d");
   }
 
   // ---------- click actions (delegated on whole document) ----------
@@ -588,6 +624,30 @@
       case "water-minus": Store.addWater(curDate, -1); return render();
       case "add-food": return addFoodModal(a.meal);
       case "del-food": Store.removeFood(a.id); return render();
+      case "copy-yesterday": {
+        const y = new Date(curDate + "T00:00:00"); y.setDate(y.getDate() - 1);
+        const n = Store.copyDayFood(Store.dayKey(y.getTime()), curDate);
+        if (!n) alert("Nothing was logged the previous day to copy.");
+        return render();
+      }
+      case "set-accent": Store.setSetting("accent", a.c); applyTheme(); return render();
+      case "tdee": return tdeeModal();
+      case "one-rm-tool": return oneRMToolModal();
+      case "add-measurement": {
+        const sel = appEl.querySelector("#meas-part"), val = appEl.querySelector("#meas-val");
+        if (sel && val && val.value) { Store.addMeasurement({ part: sel.value, value: val.value }); val.value = ""; render(); }
+        return;
+      }
+      case "del-measurement": Store.deleteMeasurement(a.id); return render();
+      case "warmup": {
+        const entry = active.entries[+a.e];
+        const work = Math.max(0, ...entry.sets.filter(s => s.type !== "warmup").map(x => x.weight || 0));
+        const bar = Store.settings().unit === "kg" ? 20 : 45;
+        const ws = Calc.warmupSets(work, bar);
+        if (!ws.length) { alert("Enter your working weight first — warm-ups ramp up to it."); return; }
+        Store.addWarmups(+a.e, ws);
+        return render();
+      }
 
       case "filter": exFilter = a.g; return render();
       case "new-exercise": return exerciseForm();
@@ -958,11 +1018,16 @@
             <span><strong>${esc(it.name)}</strong><br><span class="muted">${Math.round(it.per100.kcal)} kcal/100g · P${Math.round(it.per100.p)} C${Math.round(it.per100.c)} F${Math.round(it.per100.f)}</span></span>
           </button>`).join("")
       : "";
+    const recents = Store.recentFoods(8);
+    results.innerHTML = listHTML(recents, "Recent") || `<p class="muted">Search Open Food Facts, or your saved foods.</p>`;
     let timer;
     const doSearch = async () => {
       const term = q.value.trim();
       const lib = Store.searchLibrary(term).map(f => ({ name: f.name, per100: f.per100, serving: f.serving }));
-      if (term.length < 2) { results.innerHTML = listHTML(lib, "Your foods") || `<p class="muted">Type to search…</p>`; return; }
+      if (term.length < 2) {
+        results.innerHTML = (listHTML(recents, "Recent") + listHTML(lib, "Your foods")) || `<p class="muted">Type to search…</p>`;
+        return;
+      }
       results.innerHTML = listHTML(lib, "Your foods") + `<p class="muted">Searching Open Food Facts…</p>`;
       try {
         const off = await searchOFF(term);
@@ -1065,6 +1130,79 @@
         scan();
       } catch (e) { status.textContent = "Camera unavailable: " + e.message; }
     })();
+  }
+
+  function tdeeModal() {
+    const u = unit();
+    const lastBw = Store.bodyweights().slice(-1)[0];
+    openModal(`<div class="card" style="min-width:300px;max-height:85vh;overflow:auto">
+      <div class="row between"><h2>Calculate goals</h2><button data-action="modal-close" class="btn-sm">Close</button></div>
+      <div class="row">
+        <div class="grow"><label>Sex</label><select id="td-sex"><option value="male">Male</option><option value="female">Female</option></select></div>
+        <div class="grow"><label>Age</label><input id="td-age" inputmode="numeric" placeholder="30"></div>
+      </div>
+      <div class="row">
+        <div class="grow"><label>Weight (${u})</label><input id="td-weight" inputmode="decimal" value="${lastBw ? lastBw.value : ""}" placeholder="${u === "kg" ? 70 : 154}"></div>
+        <div class="grow"><label>Height (cm)</label><input id="td-height" inputmode="numeric" placeholder="175"></div>
+      </div>
+      <label>Activity</label>
+      <select id="td-act">
+        <option value="sedentary">Sedentary (little/no exercise)</option>
+        <option value="light">Light (1–3 days/wk)</option>
+        <option value="moderate" selected>Moderate (3–5 days/wk)</option>
+        <option value="active">Active (6–7 days/wk)</option>
+        <option value="athlete">Athlete (2×/day)</option>
+      </select>
+      <label>Goal</label>
+      <select id="td-goal"><option value="0">Maintain</option><option value="-500">Lose (~0.5 kg/wk)</option><option value="500">Gain (~0.5 kg/wk)</option></select>
+      <div id="td-out" class="muted" style="margin-top:12px"></div>
+      <div class="spacer"></div>
+      <div class="row"><span class="grow"></span><button class="btn-accent" id="td-apply">Set as my goals</button></div>
+    </div>`);
+    const compute = () => {
+      let weightKg = parseFloat(modal.querySelector("#td-weight").value) || 0;
+      if (u === "lb") weightKg = weightKg / 2.20462;
+      const cal0 = Calc.tdee({
+        sex: modal.querySelector("#td-sex").value, age: +modal.querySelector("#td-age").value,
+        weightKg, heightCm: +modal.querySelector("#td-height").value, activity: modal.querySelector("#td-act").value,
+      });
+      const cal = cal0 + (+modal.querySelector("#td-goal").value);
+      const m = Calc.macrosFromCalories(cal, weightKg);
+      modal.querySelector("#td-out").innerHTML = cal0
+        ? `Target: <strong>${m.calories} kcal</strong> · P${m.protein} · C${m.carbs} · F${m.fat}`
+        : "Fill in age, weight and height.";
+      return cal0 ? m : null;
+    };
+    modal.querySelectorAll("select,input").forEach(el => el.addEventListener("input", compute));
+    compute();
+    modal.querySelector("#td-apply").onclick = () => {
+      const m = compute();
+      if (!m) { alert("Fill in age, weight and height first."); return; }
+      Store.setGoal("calories", m.calories); Store.setGoal("protein", m.protein);
+      Store.setGoal("carbs", m.carbs); Store.setGoal("fat", m.fat);
+      modal.close(); render();
+    };
+  }
+
+  function oneRMToolModal() {
+    const u = unit();
+    const pcts = [100, 95, 90, 85, 80, 75, 70, 65, 60];
+    openModal(`<div class="card" style="min-width:280px;max-height:85vh;overflow:auto">
+      <div class="row between"><h2>1RM & % table</h2><button data-action="modal-close" class="btn-sm">Close</button></div>
+      <div class="row"><div class="grow"><label>Weight (${u})</label><input id="rm-w" inputmode="decimal" placeholder="100"></div>
+        <div class="grow"><label>Reps</label><input id="rm-r" inputmode="numeric" placeholder="5"></div></div>
+      <div id="rm-out" style="margin-top:12px"></div>
+    </div>`);
+    const out = modal.querySelector("#rm-out");
+    const draw = () => {
+      const orm = Math.round(Calc.epley1RM(+modal.querySelector("#rm-w").value, +modal.querySelector("#rm-r").value || 1));
+      out.innerHTML = orm
+        ? `<p>Estimated 1RM: <strong>${orm} ${u}</strong></p>` + pcts.map(p =>
+            `<div class="list-item"><span class="muted">${p}%</span><strong>${Math.round(orm * p / 100)} ${u}</strong></div>`).join("")
+        : `<p class="muted">Enter a weight and reps.</p>`;
+    };
+    modal.querySelectorAll("input").forEach(el => el.addEventListener("input", draw));
+    draw();
   }
 
   // ---------- backup ----------

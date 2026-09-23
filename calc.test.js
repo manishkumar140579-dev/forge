@@ -77,4 +77,20 @@ assert.strictEqual(C.dayMacros([]).kcal, 0);
 // calories burned from volume is a stable multiple
 assert.strictEqual(C.caloriesBurned(10000), 300);
 
+// TDEE (Mifflin-St Jeor): male 30y 80kg 180cm, moderate ×1.55
+// BMR = 10*80 + 6.25*180 - 5*30 + 5 = 1780; ×1.55 = 2759
+assert.strictEqual(C.tdee({ sex: "male", age: 30, weightKg: 80, heightCm: 180, activity: "moderate" }), 2759);
+assert.strictEqual(C.tdee({ age: 0 }), 0);
+
+// macro split: 2000 kcal, 80kg, 2g/kg protein, 25% fat
+const ms = C.macrosFromCalories(2000, 80, { proteinPerKg: 2, fatPct: 0.25 });
+assert.strictEqual(ms.protein, 160);              // 80*2
+assert.strictEqual(ms.fat, 56);                   // round(500/9)
+assert.strictEqual(ms.carbs, 214);                // round((2000-640-504)/4)
+
+// warm-up ramp to 100kg off a 20kg bar
+assert.deepStrictEqual(C.warmupSets(100, 20),
+  [{ weight: 20, reps: 10 }, { weight: 40, reps: 8 }, { weight: 60, reps: 5 }, { weight: 80, reps: 3 }]);
+assert.deepStrictEqual(C.warmupSets(20, 20), []); // nothing to ramp
+
 console.log("ok — all calc checks passed");

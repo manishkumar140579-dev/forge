@@ -116,10 +116,43 @@
     return Math.round(volume * 0.03);
   }
 
+  // Mifflin–St Jeor BMR × activity multiplier. weightKg, heightCm, age years.
+  function tdee({ sex, age, weightKg, heightCm, activity }) {
+    if (!age || !weightKg || !heightCm) return 0;
+    const s = sex === "female" ? -161 : 5;
+    const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + s;
+    const mult = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, athlete: 1.9 }[activity] || 1.375;
+    return Math.round(bmr * mult);
+  }
+  // Split a calorie target into macros: protein by g/kg, fat by % of calories, rest carbs.
+  function macrosFromCalories(cal, weightKg, opts) {
+    opts = opts || {};
+    const protein = Math.round(weightKg * (opts.proteinPerKg || 2));
+    const fat = Math.round((cal * (opts.fatPct || 0.25)) / 9);
+    const carbs = Math.max(0, Math.round((cal - protein * 4 - fat * 9) / 4));
+    return { calories: Math.round(cal), protein, carbs, fat };
+  }
+  // Warm-up ramp up to a working weight. Returns [{weight, reps}] (excludes the work set).
+  function warmupSets(working, bar) {
+    bar = bar || 20;
+    if (!working || working <= bar) return [];
+    const steps = [[0, 10], [0.4, 8], [0.6, 5], [0.8, 3]];
+    const seen = new Set(), out = [];
+    for (const [p, reps] of steps) {
+      let w = p === 0 ? bar : round(working * p, 2.5);
+      if (w < bar) w = bar;
+      if (w >= working) break;
+      if (seen.has(w)) continue;
+      seen.add(w);
+      out.push({ weight: w, reps });
+    }
+    return out;
+  }
+
   const Calc = {
     epley1RM, setVolume, best1RM, workoutVolume, completedSets, round,
     personalRecords, exerciseSeries, volumeSeries, newPRs, platesPerSide,
-    foodMacros, dayMacros, caloriesBurned,
+    foodMacros, dayMacros, caloriesBurned, tdee, macrosFromCalories, warmupSets,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = Calc;

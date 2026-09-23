@@ -113,18 +113,21 @@
 
   const DEFAULT_GOALS = { calories: 2200, protein: 150, carbs: 220, fat: 70, water: 8 };
 
+  const MEAS_PARTS = ["Waist", "Chest", "Arms", "Thighs", "Hips", "Neck"];
+
   function fresh() {
     return {
-      settings: { unit: "kg", restDefault: 90, increment: 2.5, theme: "dark" },
+      settings: { unit: "kg", restDefault: 90, increment: 2.5, theme: "dark", accent: "#ff6a3d" },
       goals: { ...DEFAULT_GOALS },
       exercises: seedExercises(),
       routines: [],
-      workouts: [],     // finished workouts, newest first (each has .date "YYYY-MM-DD")
-      bodyweights: [],  // [{date, value}] oldest → newest
-      foodLog: [],      // [{id, date, meal, name, grams, per100:{kcal,p,c,f}}]
-      foodLibrary: [],  // reusable saved foods [{id, name, per100, serving}]
-      water: {},        // { "YYYY-MM-DD": glasses }
-      active: null,     // the in-progress workout, or null
+      workouts: [],      // finished workouts, newest first (each has .date "YYYY-MM-DD")
+      bodyweights: [],   // [{date, value}] oldest → newest
+      measurements: [],  // [{id, date, part, value}]
+      foodLog: [],       // [{id, date, meal, name, grams, per100:{kcal,p,c,f}}]
+      foodLibrary: [],   // reusable saved foods [{id, name, per100, serving}]
+      water: {},         // { "YYYY-MM-DD": glasses }
+      active: null,      // the in-progress workout, or null
     };
   }
 
@@ -136,12 +139,13 @@
 
   // Backfill fields added in later versions so old saves keep working.
   function normalize(s) {
-    s.settings = Object.assign({ unit: "kg", restDefault: 90, increment: 2.5, theme: "dark" }, s.settings || {});
+    s.settings = Object.assign({ unit: "kg", restDefault: 90, increment: 2.5, theme: "dark", accent: "#ff6a3d" }, s.settings || {});
     s.goals = Object.assign({ ...DEFAULT_GOALS }, s.goals || {});
     s.exercises = s.exercises || seedExercises();
     s.routines = s.routines || [];
     s.workouts = s.workouts || [];
     s.bodyweights = s.bodyweights || [];
+    s.measurements = s.measurements || [];
     s.foodLog = s.foodLog || [];
     s.foodLibrary = s.foodLibrary || [];
     s.water = s.water || {};
@@ -313,6 +317,14 @@
   function updateSet(entryIdx, setIdx, patch) {
     if (!state.active) return;
     Object.assign(state.active.entries[entryIdx].sets[setIdx], patch);
+    save();
+  }
+  // Prepend warm-up sets (type "warmup") to an entry.
+  function addWarmups(entryIdx, warmups) {
+    if (!state.active) return;
+    const entry = state.active.entries[entryIdx];
+    const ws = warmups.map(w => ({ ...newSet(entry.kind), weight: w.weight, reps: w.reps, type: "warmup" }));
+    entry.sets = ws.concat(entry.sets);
     save();
   }
   function removeSet(entryIdx, setIdx) {
@@ -497,6 +509,38 @@
   function setWater(date, n) { state.water[date] = Math.max(0, n | 0); save(); }
   function addWater(date, delta) { setWater(date, getWater(date) + delta); }
 
+  // ---- body measurements ----
+  function measurements() { return state.measurements; }
+  function measurementsByPart(part) {
+    return state.measurements.filter(m => m.part === part).slice().sort((a, b) => a.date - b.date);
+  }
+  function addMeasurement({ part, value }) {
+    const v = parseFloat(value);
+    if (!isFinite(v) || v <= 0) return;
+    state.measurements.push({ id: uid(), date: Date.now(), part, value: v });
+    save();
+  }
+  function deleteMeasurement(id) { state.measurements = state.measurements.filter(m => m.id !== id); save(); }
+
+  // ---- recent foods + copy a day ----
+  function recentFoods(limit) {
+    const seen = new Set(), out = [];
+    for (let i = state.foodLog.length - 1; i >= 0 && out.length < (limit || 8); i--) {
+      const f = state.foodLog[i];
+      const key = f.name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ name: f.name, per100: f.per100, serving: f.grams || 100 });
+    }
+    return out;
+  }
+  function copyDayFood(fromDate, toDate) {
+    const src = state.foodLog.filter(f => f.date === fromDate);
+    src.forEach(f => state.foodLog.push({ ...f, id: uid(), date: toDate, per100: { ...f.per100 } }));
+    save();
+    return src.length;
+  }
+
   // ---- activity / streak ----
   function workoutsByDate(date) { return state.workouts.filter(w => w.date === date); }
   function dayHasActivity(date) {
@@ -522,11 +566,13 @@
   function reset() { state = fresh(); save(); }
 
   root.Store = {
-    MUSCLES, STARTER_PLANS, dayKey, get, settings, setSetting, goals, setGoal,
+    MUSCLES, STARTER_PLANS, MEAS_PARTS, dayKey, get, settings, setSetting, goals, setGoal,
+    measurements, measurementsByPart, addMeasurement, deleteMeasurement,
+    recentFoods, copyDayFood,
     exercises, exercise, addExercise, updateExercise, deleteExercise, cloneExercise,
     routines, addRoutine, deleteRoutine, addStarterPlan, routineToCode, routineFromCode,
     active, startWorkout, saveActiveAsRoutine, addEntry, removeEntry, moveEntry, setEntryNote,
-    addSet, updateSet, removeSet,
+    addSet, updateSet, removeSet, addWarmups,
     finishWorkout, discardWorkout, renameActive, workouts, deleteWorkout, reopenWorkout, workoutsByDate,
     bodyweights, addBodyweight, deleteBodyweight, convertUnits,
     foodByDate, addFood, removeFood, foodLibrary, saveFood, deleteLibraryFood, searchLibrary,
