@@ -21,23 +21,61 @@
   let curDate = Store.dayKey();
 
   // ---------- shell + nav ----------
+  // Feather-style line icons from the design mockups
+  const ICON = {
+    today: '<circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l2.5 2.5"></path>',
+    train: '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"></path>',
+    fuel: '<path d="M7 3v7a2 2 0 0 0 4 0V3M9 12v9M16 21V3c2.2 0 3.5 2.5 3.5 6s-1.3 4-3.5 4"></path>',
+    progress: '<path d="M4 20h16M5 16l4-5 3.5 3L19 6"></path>',
+    more: '<rect x="4" y="4" width="6" height="6" rx="1.5"></rect><rect x="14" y="4" width="6" height="6" rx="1.5"></rect><rect x="4" y="14" width="6" height="6" rx="1.5"></rect><rect x="14" y="14" width="6" height="6" rx="1.5"></rect>',
+    chevL: '<path d="M15 18l-6-6 6-6"></path>',
+    chevR: '<path d="M9 18l6-6-6-6"></path>',
+    plus: '<path d="M12 5v14M5 12h14"></path>',
+    close: '<path d="M6 6l12 12M18 6L6 18"></path>',
+    copy: '<rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>',
+    shield: '<path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6l8-3z"></path>',
+    list: '<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"></path>',
+    clock: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5M12 7v5l3 2"></path>',
+    sliders: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle>',
+  };
+  function svgIcon(name, size = 20, sw = 2) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name] || ""}</svg>`;
+  }
+
   const NAV = [
-    ["today", "🏠", "Today"],
-    ["train", "🏋️", "Train"],
-    ["fuel", "🍎", "Fuel"],
-    ["stats", "📈", "Progress"],
-    ["more", "⋯", "More"],
+    ["today", "today", "Today"],
+    ["train", "train", "Train"],
+    ["fuel", "fuel", "Fuel"],
+    ["stats", "progress", "Progress"],
+    ["more", "more", "More"],
   ];
-  // which tab lights up for a given route
   function navActive(r) {
     if (r === "workout") return "train";
     if (["exercises", "routines", "history", "settings"].includes(r)) return "more";
     return r;
   }
   function navHTML(cur) {
-    return `<nav>${NAV.map(([r, i, l]) =>
-      `<a href="#/${r}" class="${cur === r ? "active" : ""}"><span class="ico">${i}</span>${l}</a>`
+    return `<nav class="tabbar" aria-label="Main">${NAV.map(([r, ic, l]) =>
+      `<a href="#/${r}" class="${cur === r ? "active" : ""}"><span class="ico">${svgIcon(ic)}</span>${l}</a>`
     ).join("")}</nav>`;
+  }
+
+  // screen header: big Archivo title + optional subtitle
+  function screenHeader(title, subtitle) {
+    return `<header class="scr-head"><div class="scr-head-t"><h1>${esc(title)}</h1>${subtitle ? `<p class="subtitle">${esc(subtitle)}</p>` : ""}</div></header>`;
+  }
+  // date header (Today / Fuel): date line + title, day-nav buttons on the right
+  function dateHeader(title) {
+    const d = new Date(curDate + "T00:00:00");
+    const rel = dateLabel(curDate);
+    const short = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+    const line = (rel === "Today" || rel === "Yesterday") ? `${rel} · ${short}` : short;
+    return `<header class="scr-head between">
+      <div class="scr-head-t"><p class="eyebrow-date">${esc(line)}</p><h1>${esc(title)}</h1></div>
+      <div class="row" style="gap:6px">
+        <button class="daybtn" data-action="date-prev" aria-label="Previous day">${svgIcon("chevL")}</button>
+        <button class="daybtn" data-action="date-next" aria-label="Next day"${curDate >= Store.dayKey() ? " disabled" : ""}>${svgIcon("chevR")}</button>
+      </div></header>`;
   }
 
   // ---------- render dispatch ----------
@@ -55,7 +93,7 @@
     else if (r === "settings") html = viewSettings();
     else if (r === "workout") html = viewWorkout();
     appEl.innerHTML = html;
-    document.querySelectorAll("nav").forEach(n => n.remove());
+    document.querySelectorAll("body > nav").forEach(n => n.remove()); // only the bottom bar, not in-content navs
     document.body.insertAdjacentHTML("beforeend", navHTML(navActive(r)));
     wireInputs();
     renderRest();
@@ -80,14 +118,16 @@
   }
 
   // ---------- small chart bits ----------
-  function ring(pct, big, sub) {
-    const r = 52, c = 2 * Math.PI * r, off = c * (1 - Math.min(1, Math.max(0, pct)));
-    return `<svg viewBox="0 0 140 140" width="140" height="140" style="display:block;margin:0 auto">
-      <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--border)" stroke-width="12"/>
-      <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round"
-        stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 70 70)"/>
-      <text x="70" y="68" text-anchor="middle" font-family="Archivo, sans-serif" font-size="28" fill="var(--text)" font-weight="800">${big}</text>
-      <text x="70" y="90" text-anchor="middle" font-size="11" fill="var(--muted)">${sub}</text>
+  function ring(pct, big, sub, size) {
+    size = size || 140;
+    const cx = size / 2, r = cx - 10, sw = size >= 148 ? 14 : 12;
+    const c = 2 * Math.PI * r, off = c * (1 - Math.min(1, Math.max(0, pct)));
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display:block">
+      <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="var(--border)" stroke-width="${sw}"/>
+      <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="var(--accent)" stroke-width="${sw}" stroke-linecap="round"
+        stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 ${cx} ${cx})"/>
+      <text x="${cx}" y="${cx - 1}" text-anchor="middle" font-family="Archivo, sans-serif" font-size="${size >= 148 ? 30 : 28}" fill="var(--text)" font-weight="800">${big}</text>
+      <text x="${cx}" y="${cx + 19}" text-anchor="middle" font-size="11" fill="var(--muted)">${sub}</text>
     </svg>`;
   }
   function macroBar(name, val, goal, color) {
@@ -110,32 +150,40 @@
     const burned = Calc.caloriesBurned(vol);
     const water = Store.getWater(curDate);
 
-    let h = `<h1>Today</h1>${dateStrip()}`;
-    h += `<div class="card">${ring(g.calories ? kcal / g.calories : 0, kcal, `/ ${g.calories} kcal`)}
-      <div class="row between" style="margin-top:6px">
-        <span class="muted">🍽 ${kcal} in</span><span class="muted">🔥 ${burned} out</span>
-        <span class="${remaining < 0 ? "over" : "good-txt"}">${remaining >= 0 ? remaining + " left" : -remaining + " over"}</span>
+    const nf = (n) => Math.round(n).toLocaleString();
+    let h = dateHeader("Today");
+    h += `<section class="card">
+      <div class="card-hd"><h2>Calories</h2><span class="cap">Goal ${nf(g.calories)}</span></div>
+      <div class="cal-row">
+        <div class="ring-wrap">${ring(g.calories ? kcal / g.calories : 0, nf(kcal), "kcal eaten", 148)}</div>
+        <dl class="stat-dl">
+          <div><dt>Eaten</dt><dd>${nf(kcal)}</dd></div>
+          <div><dt>Burned</dt><dd>${nf(burned)}</dd></div>
+          <div><dt>Remaining</dt><dd class="${remaining < 0 ? "over" : "good-txt"}">${remaining >= 0 ? nf(remaining) : "−" + nf(-remaining)}</dd></div>
+          <div class="dl-net"><dt>Net today</dt><dd>${nf(kcal - burned)} kcal</dd></div>
+        </dl>
       </div>
-      <p class="muted" style="font-size:13px;text-align:center;margin:6px 0 0">Net ${kcal - burned} kcal</p>
-    </div>`;
-    h += `<div class="card"><h2>Macros</h2>
+    </section>`;
+    h += `<section class="card"><h2>Macros</h2>
       ${macroBar("Protein", macros.p, g.protein, "var(--macro-p)")}
       ${macroBar("Carbs", macros.c, g.carbs, "var(--macro-c)")}
-      ${macroBar("Fat", macros.f, g.fat, "var(--macro-f)")}</div>`;
-    h += `<div class="card"><div class="row between"><h2>Water</h2><strong>${water} / ${g.water}</strong></div>
-      <div class="row" style="margin-top:6px">
-        <button class="btn-sm" data-action="water-minus" aria-label="less water">−</button>
-        <div class="grow water-track">${Array.from({ length: g.water }, (_, i) => `<span class="glass ${i < water ? "full" : ""}">${i < water ? "💧" : "·"}</span>`).join("")}</div>
-        <button class="btn-sm" data-action="water-plus" aria-label="more water">＋</button></div></div>`;
-    h += `<div class="card"><div class="row between"><h2>Training</h2>
-      <button class="btn-sm btn-accent" data-action="start-empty">Start</button></div>
-      <p class="muted">${wos.length} session${wos.length !== 1 ? "s" : ""} · ${Math.round(vol).toLocaleString()} ${u} volume</p></div>`;
-    h += `<div class="card row between">
-      <div><span class="muted">Streak</span><br><strong style="font-size:22px">🔥 ${Store.streak()}d</strong></div>
-      <div><span class="muted">Protein left</span><br><strong style="font-size:22px">${Math.max(0, Math.round(g.protein - macros.p))}g</strong></div></div>`;
-
+      ${macroBar("Fat", macros.f, g.fat, "var(--macro-f)")}</section>`;
+    h += `<section class="card">
+      <div class="card-hd"><h2>Water</h2><span class="cap">${water} of ${g.water} glasses</span></div>
+      <div class="water-row">
+        <button class="daybtn" data-action="water-minus" aria-label="less water">${svgIcon("chevL")}</button>
+        <div class="water-track">${Array.from({ length: g.water }, (_, i) => `<span class="drop ${i < water ? "full" : ""}"></span>`).join("")}</div>
+        <button class="daybtn" data-action="water-plus" aria-label="more water">${svgIcon("plus")}</button>
+      </div></section>`;
+    h += `<section class="card">
+      <div class="card-hd"><h2>Training</h2><button class="btn-accent btn-sm" data-action="start-empty">Start workout</button></div>
+      <p class="cap" style="font-size:14px">${wos.length} session${wos.length !== 1 ? "s" : ""} today · ${nf(vol)} ${u} volume</p></section>`;
+    h += `<div class="stat2">
+      <div class="card stat-cell"><span class="cap">Streak</span><strong>${Store.streak()}<span class="unit"> days</span></strong></div>
+      <div class="card stat-cell"><span class="cap">Protein left</span><strong>${Math.max(0, Math.round(g.protein - macros.p))}<span class="unit"> g</span></strong></div>
+    </div>`;
     const ins = insights(g, macros, kcal, water, wos);
-    if (ins.length) h += `<div class="card"><h2>Insights</h2>${ins.map(i => `<p class="muted" style="margin:4px 0">• ${esc(i)}</p>`).join("")}</div>`;
+    if (ins.length) h += `<section class="card"><h2>Tips</h2>${ins.map(i => `<p class="tip">${esc(i)}</p>`).join("")}</section>`;
     return h;
   }
   function daysSinceLastWorkout() {
@@ -169,18 +217,26 @@
   // ---------- TRAIN (hub) ----------
   function viewTrain() {
     const rs = Store.routines();
-    let h = `<h1>Train</h1>${dateStrip()}`;
-    h += `<button class="btn-accent btn-full" data-action="start-empty">＋ Start empty workout</button><div class="spacer"></div>`;
-    h += `<h2>Starter plans</h2><div class="row wrap" style="margin-bottom:12px">${
-      Store.STARTER_PLANS.map(p => `<button class="btn-sm btn-ghost pill" data-action="add-plan" data-name="${esc(p.name)}">＋ ${esc(p.name)}</button>`).join("")}</div>`;
-    if (rs.length) {
-      h += `<h2>Your routines</h2>` + rs.map(rt => `<div class="card row between">
-        <div><strong>${esc(rt.name)}</strong><br><span class="muted">${rt.exerciseIds.length} exercises</span></div>
-        <button class="btn-blue" data-action="start-routine" data-id="${rt.id}">Start</button></div>`).join("");
-    }
-    h += `<div class="spacer"></div><div class="row">
-      <a class="btn btn-ghost grow" href="#/exercises" style="text-align:center;text-decoration:none">Exercises</a>
-      <a class="btn btn-ghost grow" href="#/history" style="text-align:center;text-decoration:none">History</a></div>`;
+    let h = screenHeader("Train", "Pick a plan, or just start and add exercises as you go.");
+    h += `<button class="cta" data-action="start-empty">
+      <span class="cta-ico">${svgIcon("plus", 24, 2.4)}</span>
+      <span class="cta-t"><span class="cta-title">Start empty workout</span><span class="cta-sub">Add exercises as you go</span></span></button>`;
+    h += `<section class="stack">
+      <div><h2>Starter plans</h2><p class="subtitle">Ready-made workouts. Tap one to begin.</p></div>
+      <div class="chips">${Store.STARTER_PLANS.map(p => `<button class="chip" data-action="add-plan" data-name="${esc(p.name)}">${esc(p.name)}</button>`).join("")}</div>
+    </section>`;
+    h += `<section class="stack">
+      <div class="sec-hd between"><h2>My routines</h2><button class="link-btn" data-action="new-routine">+ New routine</button></div>`;
+    h += rs.length
+      ? rs.map((rt, i) => `<div class="rt-card">
+          <div class="rt-info"><h3>${esc(rt.name)}</h3><p class="cap">${rt.exerciseIds.length} exercises</p></div>
+          <button class="rt-start${i === 0 ? " accent" : ""}" data-action="start-routine" data-id="${rt.id}">Start</button></div>`).join("")
+      : `<div class="rt-card"><div class="rt-info"><p class="cap">No routines yet — save one from a workout, or tap a starter plan.</p></div></div>`;
+    h += `</section>`;
+    h += `<div class="grid2">
+      <a class="tile" href="#/exercises"><span class="tile-t">Exercises</span><span class="cap">Browse or add your own</span></a>
+      <a class="tile" href="#/history"><span class="tile-t">History</span><span class="cap">Your past workouts</span></a>
+    </div>`;
     return h;
   }
 
@@ -188,46 +244,59 @@
   function viewFuel() {
     const food = Store.foodByDate(curDate);
     const totals = Calc.dayMacros(food);
-    let h = `<h1>Fuel</h1>${dateStrip()}`;
-    h += `<div class="card row between" style="text-align:center">
-      <div><span class="muted">kcal</span><br><strong style="font-size:20px">${Math.round(totals.kcal)}</strong></div>
-      <div><span class="muted">P</span><br><strong>${Math.round(totals.p)}g</strong></div>
-      <div><span class="muted">C</span><br><strong>${Math.round(totals.c)}g</strong></div>
-      <div><span class="muted">F</span><br><strong>${Math.round(totals.f)}g</strong></div></div>`;
-    if (food.length) {
-      const mic = Calc.dayMicros(food);
-      h += `<p class="muted" style="font-size:12px;text-align:center;margin:-8px 0 12px">Fiber ${Math.round(mic.fiber)}g · Sugar ${Math.round(mic.sugar)}g · Sodium ${Math.round(mic.sodium * 1000)}mg</p>`;
-    }
-    h += `<button class="btn-sm btn-ghost btn-full" data-action="copy-yesterday" style="margin-bottom:12px">⧉ Copy yesterday's meals</button>`;
+    const nf = (n) => Math.round(n).toLocaleString();
+    let h = dateHeader("Fuel");
+    h += `<section class="card">
+      <dl class="totals">
+        <div><dt>Calories</dt><dd>${nf(totals.kcal)}</dd></div>
+        <div><dt>Protein</dt><dd style="color:var(--macro-p)">${nf(totals.p)} g</dd></div>
+        <div><dt>Carbs</dt><dd style="color:var(--macro-c)">${nf(totals.c)} g</dd></div>
+        <div><dt>Fat</dt><dd style="color:var(--macro-f)">${nf(totals.f)} g</dd></div>
+      </dl>
+      <button class="wide-btn" data-action="copy-yesterday">${svgIcon("copy", 18)} Copy yesterday's meals</button>
+    </section>`;
     MEALS.forEach(meal => {
       const items = food.filter(f => f.meal === meal);
       const sub = Calc.dayMacros(items);
-      h += `<div class="card">
-        <div class="row between"><h2>${meal}</h2>
-          <button class="btn-sm btn-blue" data-action="add-food" data-meal="${meal}" aria-label="add food">＋</button></div>
-        ${items.length ? items.map(f => {
-          const m = Calc.foodMacros(f);
-          return `<div class="list-item"><div><strong>${esc(f.name)}</strong><br>
-            <span class="muted">${f.grams} g · ${Math.round(m.kcal)} kcal · P${Math.round(m.p)} C${Math.round(m.c)} F${Math.round(m.f)}</span></div>
-            <button class="btn-sm btn-ghost btn-danger" data-action="del-food" data-id="${f.id}" aria-label="delete food">✕</button></div>`;
-        }).join("") : `<p class="muted" style="font-size:14px">Nothing logged.</p>`}
-        ${items.length ? `<p class="muted" style="font-size:13px;text-align:right;margin:6px 0 0">${Math.round(sub.kcal)} kcal</p>` : ""}
-      </div>`;
+      h += `<section class="card meal">
+        <div class="meal-hd">
+          <h2 class="meal-title">${meal}</h2>
+          <span class="cap">${nf(sub.kcal)} kcal</span>
+          <button class="add-btn${items.length ? " accent" : ""}" data-action="add-food" data-meal="${meal}" aria-label="Add food to ${meal}">${svgIcon("plus", 20, 2.4)}</button>
+        </div>`;
+      h += items.length
+        ? items.map(f => {
+            const m = Calc.foodMacros(f);
+            return `<div class="food-row">
+              <div class="food-info"><span class="food-name">${esc(f.name)}</span><span class="cap">${f.grams} g · P ${Math.round(m.p)} · C ${Math.round(m.c)} · F ${Math.round(m.f)}</span></div>
+              <span class="food-kcal">${Math.round(m.kcal)}</span>
+              <button class="x-btn" data-action="del-food" data-id="${f.id}" aria-label="Remove ${esc(f.name)}">${svgIcon("close", 18)}</button></div>`;
+          }).join("")
+        : `<div class="empty-dashed"><span class="food-name">Nothing logged for ${meal.toLowerCase()} yet</span><span class="cap">Tap + to search, scan or add your own food.</span></div>`;
+      h += `</section>`;
     });
     return h;
   }
 
   // ---------- MORE (menu) ----------
   function viewMore() {
-    const link = (href, title, sub) =>
-      `<a class="list-item" href="${href}" style="text-decoration:none;color:inherit">
-        <strong>${title}</strong><span class="muted">${sub} ›</span></a>`;
-    return `<h1>More</h1><div class="card">
-      ${link("#/exercises", "🏋️ Exercises", "library & custom")}
-      ${link("#/routines", "📋 Routines", "templates & plans")}
-      ${link("#/history", "📖 History", "past workouts")}
-      ${link("#/settings", "⚙️ Settings", "goals, units, backup")}
-    </div><p class="fab-note">Forge · offline-first · data stays on this device.</p>`;
+    const row = (href, ic, title, sub) => `<a class="menu-row" href="${href}">
+      <span class="mrow-ico">${svgIcon(ic)}</span>
+      <span class="mrow-t"><span class="mrow-title">${title}</span><span class="cap">${sub}</span></span>
+      <span class="chev">${svgIcon("chevR", 18)}</span></a>`;
+    let h = screenHeader("More");
+    h += `<nav class="menu" aria-label="More sections">
+      ${row("#/exercises", "train", "Exercises", "Browse the library or add your own")}
+      ${row("#/routines", "list", "Routines", "Saved workouts you can repeat or share")}
+      ${row("#/history", "clock", "History", "Every workout you've finished")}
+      ${row("#/settings", "sliders", "Settings", "Units, colours, goals and backup")}
+    </nav>`;
+    h += `<section class="card privacy">
+      <span class="mrow-ico shield">${svgIcon("shield")}</span>
+      <div><h2 class="priv-t">Your data stays on this phone</h2><p class="cap">No account, no sign-in. Make a backup any time from Settings.</p></div>
+    </section>`;
+    h += `<p class="version">Forge · offline-first</p>`;
+    return h;
   }
 
   // ---------- EXERCISES ----------
