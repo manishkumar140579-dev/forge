@@ -24,7 +24,7 @@ Clean-room build inspired by the GPL app "Iron" — **no GPL code is used**, so 
 ## 📱 Native app (Capacitor) — in progress
 - **Phase 1 scaffold done:** `capacitor.config.json`, `scripts/sync-www.mjs` (root → `www/`), `package.json` deps, and the generated Android project. See **`MOBILE.md`** for the full roadmap + build steps.
 - **To build the APK (your machine):** install **JDK 17** (env here has Java 8) + **Android Studio**, then `npm install && npm run cap:add:android && npm run cap:open:android`.
-- **Next (Phase 2):** Android Health Connect / iOS HealthKit plugin → call `Store.setSteps()` for step auto-sync.
+- **Phase 2 (steps from Health) — web seam done:** `health.js` + Settings → Steps & Health → Connect; auto-syncs on launch/resume via `Store.setSteps()`. Remaining: install a native Health Connect / HealthKit plugin + permissions (needs device + SDK). See `MOBILE.md`.
 
 ## ⏳ Pending — needs money / infrastructure (not built)
 - **Cloud sync / multi-device accounts** — needs a hosted backend (free tier: Supabase or Firebase).

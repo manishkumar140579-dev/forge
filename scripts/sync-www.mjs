@@ -10,7 +10,7 @@ const www = join(root, "www");
 
 // The app's runtime files only — no design/, node_modules/, tests or markdown.
 const FILES = [
-  "index.html", "app.css", "app.js", "calc.js", "store.js", "qrcode.js",
+  "index.html", "app.css", "app.js", "calc.js", "store.js", "qrcode.js", "health.js",
   "sw.js", "manifest.webmanifest",
   "icon.svg", "icon-180.png", "icon-192.png", "icon-512.png", "icon-light-512.png",
 ];

@@ -498,6 +498,11 @@
       ${goalRow("calories", "Calories", "kcal")}${goalRow("protein", "Protein", "g")}${goalRow("carbs", "Carbs", "g")}${goalRow("fat", "Fat", "g")}${goalRow("water", "Water", "glasses")}${goalRow("steps", "Steps", "steps")}
       <button class="btn-accent goals-cta" data-action="tdee">Work out my goals for me</button>
       <p class="cap" style="text-align:center;margin-top:4px">Uses your age, height, weight and activity (TDEE).</p></section>`;
+    const healthOn = !!(window.Health && Health.available());
+    h += `<section class="card">
+      <h2>Steps &amp; Health</h2>
+      <button class="wide-btn" data-action="connect-health">${svgIcon("today", 18)} Connect Apple Health / Google Fit</button>
+      <p class="cap" style="margin-top:6px">${healthOn ? "Pulls your daily step count automatically." : "Available in the Forge Android / iOS app. On the web you can log steps by hand on Today."}</p></section>`;
     h += `<section class="card">
       <h2>Backup</h2>
       <div class="grid2b"><button data-action="export">Export JSON</button><button data-action="export-csv">Export CSV</button></div>
@@ -946,6 +951,14 @@
         return render();
       }
       case "tdee": return tdeeModal();
+      case "connect-health": {
+        if (!(window.Health && Health.available())) { showToast("Step sync runs in the Forge Android / iOS app."); return; }
+        Health.connect().then(ok => {
+          if (!ok) { showToast("Health permission was declined."); return; }
+          Health.syncToday().then(n => { render(); showToast(n ? `Synced ${n.toLocaleString()} steps` : "Connected — no steps logged yet today."); });
+        });
+        return;
+      }
       case "log-measurement": return logMeasurementModal();
       case "welcome-unit": welcomeUnit = a.v; return render();
       case "welcome-go": Store.setSetting("unit", welcomeUnit); localStorage.setItem("forge.welcomed", "1"); return go("today");
@@ -1959,5 +1972,13 @@
   // PWA offline support
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+
+  // Pull today's steps from Health on launch + whenever the app regains focus.
+  // No-op on the web (window.Health degrades to a stub); only fires in the native app.
+  if (window.Health) {
+    const syncHealth = () => { if (Health.available()) Health.syncToday().then(n => { if (n) render(); }); };
+    syncHealth();
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) syncHealth(); });
   }
 })();

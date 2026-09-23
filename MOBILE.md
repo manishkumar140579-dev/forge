@@ -13,7 +13,8 @@ root *.html/.css/.js  ──(scripts/sync-www.mjs)──▶  www/  ──(cap sy
 - [x] **Phase 1 — Capacitor shell.** Config, `www/` assembler, deps, and the Android
       project are scaffolded. Web assets bundle into the app.
 - [ ] **Phase 1 build** — produce an installable APK (needs Android Studio + JDK 17, below).
-- [ ] **Phase 2 — Health/steps** (Android Health Connect / iOS HealthKit → `Store.setSteps`).
+- [~] **Phase 2 — Health/steps.** Web seam (`health.js`) + Settings Connect done; native
+      plugin install/permissions pending (needs device + SDK).
 - [ ] **Phase 3 — store submission** · **Phase 4 — cloud sync** · **Phase 5 — widgets/Watch/AI**.
 
 ## Prerequisites to build the APK (one-time)
@@ -51,19 +52,26 @@ npm run cap:open:ios        # build/run in Xcode
 ```
 
 ## Phase 2 — step count from Health (the integration you asked for)
-The UI + storage are already built. The only missing piece is a native bridge that reads
-daily steps and calls the existing hook:
+**Web side is done:** `health.js` is the seam and Settings → **Steps & Health → Connect**
+is wired. On launch and on app-resume it calls `Health.syncToday()`, which reads today's
+steps and writes them via the existing hook `Store.setSteps(Store.dayKey(), n)`. On the web
+it's a safe no-op. What's left is the **native plugin** (needs a device + SDK to verify):
 
-```js
-Store.setSteps(Store.dayKey(), stepCountForToday);
-```
-
-- **Android:** add a Health Connect Capacitor plugin, request the read-steps permission,
-  read today's total, call `setSteps`. Run it on app launch and on resume.
-- **iOS:** same via a HealthKit plugin.
-- Add a **"Connect Health"** toggle in Settings that triggers the permission request.
-- Health data means the stores require a **privacy policy** (host a page on the existing
-  GitHub Pages site) and data-use declarations at submission.
+1. **Install a Health plugin** (pick one), e.g. Health Connect for Android + HealthKit for iOS:
+   ```bash
+   npm install <health-connect-capacitor-plugin>
+   npm run cap:sync
+   ```
+2. **Register it under the name `Health`** so `health.js` finds it at
+   `Capacitor.Plugins.Health` (or change the `plugin()` name in `health.js` to match).
+3. **Match the two method names** in `health.js` to the plugin's API:
+   `requestAuthorization({ read: ["steps"] })` and
+   `queryTotalSteps({ startDate, endDate }) → { steps }`. Calls are guarded, so a mismatch
+   just yields "no data" until aligned — it never crashes.
+4. **Android permission:** add `android.permission.health.READ_STEPS` (Health Connect) to
+   `android/app/src/main/AndroidManifest.xml`. **iOS:** add HealthKit usage strings to `Info.plist`.
+5. Health data means the stores require a **privacy policy** (host a page on the existing
+   GitHub Pages site) and data-use declarations at submission.
 
 ## Notes / gotchas
 - **App id** is `com.manishkumar.forge` (`capacitor.config.json`) — change before publishing if you want.
