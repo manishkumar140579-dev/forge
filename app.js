@@ -38,7 +38,12 @@
     list: '<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"></path>',
     clock: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5M12 7v5l3 2"></path>',
     sliders: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle>',
+    pencil: '<path d="M4 20h4L19 9l-4-4L4 16v4z"></path>',
+    target: '<circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="2.5"></circle>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7"></path>',
+    chevD: '<path d="M6 9l6 6 6-6"></path>',
   };
+  const DOTS_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>';
   function svgIcon(name, size = 20, sw = 2) {
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name] || ""}</svg>`;
   }
@@ -573,54 +578,113 @@
   }
 
   // ---------- ACTIVE WORKOUT ----------
+  let openEntry = 0;
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const setTypeName = (t) => ({ warmup: "warm-up", drop: "drop set", failure: "to failure", normal: "working set" }[t] || "working set");
+  function stpCol(label, i, j, which, val) {
+    const dec = { w: "w-", r: "r-", sec: "sec-", dist: "dist-" }[which];
+    const inc = { w: "w+", r: "r+", sec: "sec+", dist: "dist+" }[which];
+    return `<div class="stp-col"><span class="stp-label">${label}</span>
+      <div class="stp-box">
+        <button class="stp-btn" data-action="${dec}" data-e="${i}" data-s="${j}" aria-label="less">${svgIcon("minus", 20, 2.4)}</button>
+        <span class="stp-val">${val || 0}</span>
+        <button class="stp-btn" data-action="${inc}" data-e="${i}" data-s="${j}" aria-label="more">${svgIcon("plus", 20, 2.4)}</button>
+      </div></div>`;
+  }
+  function stepFields(i, j, set, kind, u) {
+    if (kind === "time") return stpCol("Seconds", i, j, "sec", set.seconds);
+    if (kind === "distance") return stpCol("Distance · km", i, j, "dist", set.distance) + stpCol("Seconds", i, j, "sec", set.seconds);
+    return stpCol((kind === "bodyweight" ? "Added · " : "Weight · ") + u, i, j, "w", set.weight) + stpCol("Reps", i, j, "r", set.reps);
+  }
+  function rpeRow(i, j, set) {
+    return `<div class="rpe-row"><span class="rpe-label">EFFORT<br>(RPE)</span>
+      <div class="rpe-btns">${[7, 8, 9, 10].map(v =>
+        `<button class="rpe-b${set.rpe === v ? " on" : ""}" data-action="rpe-set" data-e="${i}" data-s="${j}" data-v="${v}">${v}</button>`).join("")}</div></div>`;
+  }
+
   function viewWorkout() {
     const a = Store.active();
-    if (!a) { go("home"); return "<p>No active workout.</p>"; }
+    if (!a) { go("train"); return ""; }
     const u = unit();
-    let h = `<div class="row between">
-      <h1 style="margin:0">${esc(a.name)}</h1>
-      <div class="row">
-        <button class="btn-sm btn-ghost" data-action="plates" title="Plate calculator">⚖︎</button>
-        <button class="btn-sm btn-ghost" data-action="rename-workout">✎</button>
+    if (openEntry >= a.entries.length) openEntry = Math.max(0, a.entries.length - 1);
+    const doneCount = Calc.completedSets(a.entries);
+    const totalCount = a.entries.reduce((n, e) => n + e.sets.length, 0);
+    const elapsed = Math.max(0, Math.floor((Date.now() - a.start) / 1000));
+    const fmtT = (t) => Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+
+    let h = `<header class="wk-head">
+      <button class="daybtn" data-action="go-train" aria-label="Back to Train">${svgIcon("chevL")}</button>
+      <div class="wk-title">
+        <button class="wk-name" data-action="rename-workout">${esc(a.name)} ${svgIcon("pencil", 15)}</button>
+        <p class="cap">${fmtT(elapsed)} elapsed · ${doneCount} of ${totalCount} sets done</p>
       </div>
-    </div><p class="muted">Started ${fmtTime(a.start)} · ${Calc.completedSets(a.entries)} sets done</p><div class="spacer"></div>`;
+      <button class="daybtn" data-action="plates" aria-label="Plate calculator">${svgIcon("target")}</button>
+      <button class="wk-finish" data-action="finish">Finish</button>
+    </header>`;
 
     a.entries.forEach((entry, i) => {
-      const ex = Store.exercise(entry.exerciseId) || { name: "?", muscle: "", kind: "weight" };
+      const ex = Store.exercise(entry.exerciseId) || { name: "?", muscle: "", category: "", kind: "weight" };
       const kind = entry.kind || "weight";
-      const last = Store.lastPerformance(entry.exerciseId);
-      const lastTxt = last ? "Last: " + last.sets.map(s => fmtSet(s, kind)).join(", ") : "First time — no history yet";
-      const doneSets = entry.sets.filter(s => s.done);
-      const est = (kind === "weight" && doneSets.length) ? Math.round(Calc.best1RM(doneSets)) : 0;
-      const suggest = (kind === "weight" && last) ? Calc.overloadSuggestion(last.sets, ex.increment || Store.settings().increment, 8) : null;
-      h += `<div class="card">
-        <div class="row between">
-          <div><strong>${esc(ex.name)}</strong> <span class="muted">${esc(ex.muscle)}</span></div>
-          <div class="row">
-            ${est ? `<span class="tag">≈${est} ${unit()} 1RM</span>` : ""}
-            <button class="btn-sm btn-ghost" data-action="move-entry" data-e="${i}" data-dir="-1" aria-label="move up">▲</button>
-            <button class="btn-sm btn-ghost" data-action="move-entry" data-e="${i}" data-dir="1" aria-label="move down">▼</button>
-            <button class="btn-sm btn-danger btn-ghost" data-action="del-entry" data-e="${i}" aria-label="remove exercise">✕</button>
+      if (i === openEntry) {
+        const last = Store.lastPerformance(entry.exerciseId);
+        const lastTxt = last ? last.sets.map(s => fmtSet(s, kind)).join(", ") : "First time";
+        const doneSets = entry.sets.filter(s => s.done);
+        const est = (kind === "weight" && doneSets.length) ? Math.round(Calc.best1RM(doneSets)) : 0;
+        const curIdx = entry.sets.findIndex(s => !s.done);
+        let normN = 0;
+        h += `<section class="card wk-ex">
+          <div class="wk-ex-hd">
+            <div class="wk-ex-t"><h2 class="wk-ex-name">${esc(ex.name)}</h2>
+              <div class="wk-ex-meta">${esc(ex.muscle)}${ex.category ? " · " + esc(ex.category) : ""}${est ? `<span class="orm-pill">≈1RM ${est} ${u}</span>` : ""}</div></div>
+            <button class="daybtn" data-action="entry-menu" data-e="${i}" aria-label="Options">${DOTS_SVG}</button>
           </div>
-        </div>
-        <p class="muted" style="font-size:13px;margin:2px 0 8px">${esc(lastTxt)}${suggest ? ` · <span style="color:var(--good);font-weight:600">↑ try ${suggest} ${unit()}</span>` : ""}</p>
-        ${entry.sets.map((set, j) => setRow(i, j, set, kind)).join("")}
-        <div class="row" style="margin-top:8px">
-          <button class="btn-sm btn-ghost grow" data-action="add-set" data-e="${i}">＋ Add set</button>
-          ${kind === "weight" ? `<button class="btn-sm btn-ghost" data-action="warmup" data-e="${i}" title="Add warm-up sets" aria-label="add warm-up sets">🔥</button>` : ""}
-          <button class="btn-sm btn-ghost" data-action="entry-note" data-e="${i}" aria-label="add note">📝</button>
-        </div>
-        ${entry.note ? `<p class="muted" style="font-size:13px;margin-top:8px">📝 ${esc(entry.note)}</p>` : ""}
-      </div>`;
+          <p class="last-chip">Last time: <span>${esc(lastTxt)}</span></p>
+          ${entry.note ? `<p class="last-chip">📝 <span>${esc(entry.note)}</span></p>` : ""}
+          <div class="set-list">`;
+        entry.sets.forEach((set, j) => {
+          const badge = set.type === "warmup" ? "W" : set.type === "drop" ? "D" : set.type === "failure" ? "F" : String(++normN);
+          const badgeCls = set.type && set.type !== "normal" ? "type-" + set.type : "";
+          if (j === curIdx) {
+            h += `<div class="cur-set">
+              <div class="cur-hd"><button class="set-badge ${badgeCls}" data-action="cycle-type" data-e="${i}" data-s="${j}" aria-label="set type">${badge}</button>
+                <span class="cur-title">${set.type === "normal" ? "Set " + badge : cap(setTypeName(set.type))} · up next</span></div>
+              <div class="stp-grid">${stepFields(i, j, set, kind, u)}</div>
+              ${(kind === "weight" || kind === "bodyweight") ? rpeRow(i, j, set) : ""}
+              <button class="complete-btn" data-action="complete-set" data-e="${i}" data-s="${j}">${svgIcon("check", 20, 2.6)} Complete set</button>
+            </div>`;
+          } else {
+            h += `<div class="sum-set${set.done ? "" : " pending"}">
+              <button class="set-badge ${badgeCls}" data-action="cycle-type" data-e="${i}" data-s="${j}" aria-label="set type">${badge}</button>
+              <span class="sum-txt">${fmtSet(set, kind)}</span>
+              <span class="cap">${set.rpe ? "RPE " + set.rpe : ""}</span>
+              <button class="chk${set.done ? " on" : ""}" data-action="done" data-e="${i}" data-s="${j}" aria-label="toggle done">${svgIcon("check", 20, 2.6)}</button>
+            </div>`;
+          }
+        });
+        h += `</div>
+          <div class="wk-ex-foot">
+            <button data-action="add-set" data-e="${i}">+ Add set</button>
+            ${kind === "weight" ? `<button data-action="warmup" data-e="${i}">+ Warm-up</button>` : `<button data-action="entry-note" data-e="${i}">Note</button>`}
+            <button data-action="entry-note" data-e="${i}">Note</button>
+          </div>
+        </section>`;
+      } else {
+        const dc = entry.sets.filter(s => s.done).length;
+        const last = Store.lastPerformance(entry.exerciseId);
+        const lastTxt = last ? " · Last: " + fmtSet(last.sets[last.sets.length - 1], kind) : "";
+        h += `<button class="card wk-collapsed" data-action="open-entry" data-e="${i}">
+          <span class="wk-col-t"><span class="wk-col-name">${esc(ex.name)}</span>
+            <span class="cap">${esc(ex.muscle)}${ex.category ? " · " + esc(ex.category) : ""}${lastTxt}</span></span>
+          <span class="cap">${dc} / ${entry.sets.length}</span>
+          <span class="as-chip">${svgIcon("chevD")}</span>
+        </button>`;
+      }
     });
 
-    h += `<button class="btn-blue btn-full" data-action="add-exercise">＋ Add exercise</button>
-      <div class="spacer"></div>`;
-    if (a.entries.length) h += `<button class="btn-full btn-ghost" data-action="save-as-routine">💾 Save as routine</button>
-      <div class="spacer"></div>`;
-    h += `<button class="btn-accent btn-full" data-action="finish">✓ Finish workout</button>
-      <div class="spacer"></div>
-      <button class="btn-full btn-ghost btn-danger" data-action="discard">Discard</button>`;
+    h += `<button class="add-ex-btn" data-action="add-exercise">${svgIcon("plus", 20, 2.4)} Add exercise</button>`;
+    h += `<div class="grid2b">
+      <button class="ghost-btn" data-action="save-as-routine">Save as routine</button>
+      <button class="reset-btn" data-action="discard">Discard workout</button></div>`;
     return h;
   }
 
@@ -720,8 +784,8 @@
     const active = Store.active();
 
     switch (a.action) {
-      case "start-empty": Store.startWorkout(null, curDate); return go("workout");
-      case "start-routine": Store.startWorkout(a.id, curDate); return go("workout");
+      case "start-empty": Store.startWorkout(null, curDate); openEntry = 0; return go("workout");
+      case "start-routine": Store.startWorkout(a.id, curDate); openEntry = 0; return go("workout");
       case "resume": return go("workout");
 
       case "date-prev": return shiftDate(-1);
@@ -781,7 +845,7 @@
       case "del-program": if (confirm("Delete this program?")) { Store.deleteProgram(a.id); render(); } return;
       case "start-program": {
         const rid = Store.programNextRoutineId(a.id);
-        if (rid) { Store.startWorkout(rid, curDate); Store.advanceProgram(a.id); return go("workout"); }
+        if (rid) { Store.startWorkout(rid, curDate); Store.advanceProgram(a.id); openEntry = 0; return go("workout"); }
         return;
       }
       case "import-csv": return importCSV();
@@ -820,8 +884,8 @@
       case "add-exercise": return exercisePicker();
       case "add-set": Store.addSet(+a.e); return render();
       case "del-set": Store.removeSet(+a.e, +a.s); return render();
-      case "del-entry": Store.removeEntry(+a.e); return render();
-      case "move-entry": Store.moveEntry(+a.e, +a.dir); return render();
+      case "del-entry": modal.close(); Store.removeEntry(+a.e); return render();
+      case "move-entry": modal.close(); Store.moveEntry(+a.e, +a.dir); return render();
       case "entry-note": {
         const note = prompt("Note for this exercise:", active.entries[+a.e].note || "");
         if (note !== null) { Store.setEntryNote(+a.e, note); render(); }
@@ -847,6 +911,24 @@
       case "w-": adjust(+a.e, +a.s, "weight", -stepFor(+a.e)); return render();
       case "r+": adjust(+a.e, +a.s, "reps", 1); return render();
       case "r-": adjust(+a.e, +a.s, "reps", -1); return render();
+      case "sec+": adjust(+a.e, +a.s, "seconds", 5); return render();
+      case "sec-": adjust(+a.e, +a.s, "seconds", -5); return render();
+      case "dist+": adjust(+a.e, +a.s, "distance", 0.5); return render();
+      case "dist-": adjust(+a.e, +a.s, "distance", -0.5); return render();
+      case "go-train": return go("train");
+      case "open-entry": openEntry = +a.e; return render();
+      case "entry-menu": return entryMenuModal(+a.e);
+      case "rpe-set": {
+        const set = active.entries[+a.e].sets[+a.s];
+        Store.updateSet(+a.e, +a.s, { rpe: set.rpe === +a.v ? "" : +a.v });
+        return render();
+      }
+      case "complete-set": {
+        Store.updateSet(+a.e, +a.s, { done: true });
+        const ex = Store.exercise(active.entries[+a.e].exerciseId);
+        startRest((ex && ex.defaultRest) || Store.settings().restDefault);
+        return render();
+      }
 
       case "rename-workout": {
         const name = prompt("Workout name:", active.name);
@@ -1002,6 +1084,7 @@
       const b = e.target.closest("[data-pick]");
       if (!b) return;
       Store.addEntry(b.dataset.pick);
+      if (Store.active()) openEntry = Store.active().entries.length - 1; // open the one just added
       modal.close(); render();
     });
   }
@@ -1469,6 +1552,18 @@
     };
   }
 
+  function entryMenuModal(i) {
+    const ex = Store.exercise(Store.active().entries[i].exerciseId) || {};
+    openModal(`<div class="card" style="min-width:280px">
+      <h2>${esc(ex.name || "Exercise")}</h2>
+      <button class="wide-btn" data-action="move-entry" data-e="${i}" data-dir="-1" style="margin-top:10px">↑ Move up</button>
+      <button class="wide-btn" data-action="move-entry" data-e="${i}" data-dir="1" style="margin-top:8px">↓ Move down</button>
+      <button class="reset-btn" data-action="del-entry" data-e="${i}" style="margin-top:8px">Remove exercise</button>
+      <div class="spacer"></div>
+      <div class="row"><span class="grow"></span><button data-action="modal-close">Close</button></div>
+    </div>`);
+  }
+
   // ---------- backup ----------
   function downloadFile(text, name, type) {
     const blob = new Blob([text], { type });
@@ -1559,13 +1654,13 @@
     if (!el) { el = document.createElement("div"); el.id = "rest"; el.className = "rest-banner"; document.body.appendChild(el); }
     const m = Math.floor(rest.remaining / 60), s = rest.remaining % 60;
     const pct = rest.total ? (rest.remaining / rest.total) * 100 : 0;
-    el.innerHTML = `<button class="rest-adj" data-action="rest-minus" aria-label="minus 15 seconds">−15</button>
+    el.innerHTML = `<button class="rest-adj" data-action="rest-minus" aria-label="15 seconds less">−15s</button>
       <div class="rest-mid">
-        <div class="rest-time">⏱ ${m}:${String(s).padStart(2, "0")}</div>
+        <div class="rest-top"><span class="rest-lbl">Rest</span><span class="rest-time">${m}:${String(s).padStart(2, "0")}</span></div>
         <div class="rest-bar"><div class="rest-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
       </div>
-      <button class="rest-adj" data-action="rest-plus" aria-label="plus 15 seconds">+15</button>
-      <button class="rest-adj" data-action="rest-stop" aria-label="skip rest">✕</button>`;
+      <button class="rest-adj" data-action="rest-plus" aria-label="15 seconds more">+15s</button>
+      <button class="rest-skip" data-action="rest-stop">Skip</button>`;
   }
   function notify(title, body) {
     if (!("Notification" in window)) return;
