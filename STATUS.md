@@ -13,11 +13,9 @@ Clean-room build inspired by the GPL app "Iron" — **no GPL code is used**, so 
 ## ✅ Done (live)
 - **All free features:** workouts (sets/reps/RPE/warm-up/drop/failure, rest timer, plate calc, 1RM, PRs, overload hints), routines + programs + starter plans, **nutrition** (meals, Open Food Facts search, barcode scan, portions, manual foods, fiber/sugar/sodium), **Today dashboard** (calories/macros/water/streak/tips), any-day logging, **Progress** (bodyweight, volume, per-exercise 1RM, PRs, activity heatmap, body measurements, 1RM calc), TDEE goal calc, recent foods + copy-yesterday, interval timer, CSV import/export + JSON backup, undo-delete, favourite exercises, light/dark + 6 accent colours, kg⇄lb conversion.
 - **App icon:** flame + barbell, light/dark adaptive (`icon.svg` + PNGs).
-- **UI rebuilt 1:1 to the design mockups:** Welcome · Today · Train · Workout · Fuel · More · Settings + shared shell (SVG tab bar, Archivo/IBM Plex fonts, solid cards, tokens). Bottom-sheet modals; Portion sheet.
-
-## ⏳ Pending — build work (this is where to resume)
-1. **Progress screen → 1:1 rebuild** to `design/screens/Progress.dc.html`. Currently on the design system but not pixel-exact.
-2. **Add-food sheet → exact tab layout** (Recent / My foods / Online pills) per `design/screens/AddFood.dc.html`. Currently a functional sheet with those sections stacked.
+- **UI rebuilt 1:1 to the design mockups:** Welcome · Today · Train · Workout · Fuel · AddFood · Portion · More · Progress · Settings + shared shell (SVG tab bar, Archivo/IBM Plex fonts, solid cards, tokens). Bottom-sheet modals.
+- **Progress screen:** value+delta chart cards (gridlines + endpoint dot), exercise-progress stat tiles, ranked PR list, activity heatmap w/ active-day count, measurement tiles + log modal, inline 1RM calculator.
+- **Add-food sheet:** Recent / My foods / Online segmented tabs, search box + barcode button, food rows, manual-entry.
 
 ## ⏳ Pending — needs money / infrastructure (not built)
 - **Cloud sync / multi-device accounts** — needs a hosted backend (free tier: Supabase or Firebase).

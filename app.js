@@ -10,6 +10,7 @@
   const unit = () => Store.settings().unit;
   const fmtDate = (ts) => new Date(ts).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
   const fmtTime = (ts) => new Date(ts).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  const shortDate = (ts) => new Date(ts).toLocaleDateString(undefined, { day: "numeric", month: "short" });
   const num = (v) => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
 
   const routes = ["today", "train", "fuel", "more", "exercises", "history", "routines", "stats", "settings", "workout", "welcome"];
@@ -43,6 +44,8 @@
     target: '<circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="2.5"></circle>',
     check: '<path d="M5 12.5l4.5 4.5L19 7"></path>',
     chevD: '<path d="M6 9l6 6 6-6"></path>',
+    search: '<circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>',
+    barcode: '<path d="M4 6v12M8 6v12M11 6v12M15 6v12M18 6v12M20.5 6v12"></path>',
   };
   const DOTS_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>';
   function svgIcon(name, size = 20, sw = 2) {
@@ -483,41 +486,51 @@
 
   // ---------- STATS ----------
   // Minimal inline SVG line chart — no chart library.
-  function lineChart(values) {
-    const w = 320, h = 90, pad = 8;
+  function lineChart(values, opts) {
+    opts = opts || {};
+    const w = 320, h = 96, pad = 10, color = opts.color || "var(--accent)";
     if (values.length < 2) return `<p class="muted" style="margin:6px 0">Not enough data yet — log a couple more.</p>`;
     const min = Math.min(...values), max = Math.max(...values), range = (max - min) || 1;
-    const n = values.length;
+    const n = values.length, mid = h / 2;
     const X = i => pad + (i / (n - 1)) * (w - 2 * pad);
     const Y = v => pad + (1 - (v - min) / range) * (h - 2 * pad);
     const pts = values.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
-    return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-      <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/>
-    </svg><div class="row between muted" style="font-size:12px"><span>${min}</span><span>${max}</span></div>`;
+    const left = opts.left != null ? opts.left : String(min), right = opts.right != null ? opts.right : String(max);
+    return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M${pad} ${pad}H${w - pad}M${pad} ${mid}H${w - pad}M${pad} ${h - pad}H${w - pad}" stroke="var(--border)" stroke-width="1" fill="none" vector-effect="non-scaling-stroke"/>
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      <circle cx="${X(n - 1).toFixed(1)}" cy="${Y(values[n - 1]).toFixed(1)}" r="3.5" fill="${color}"/>
+    </svg><div class="row between muted" style="font-size:12px"><span>${esc(String(left))}</span><span>${esc(String(right))}</span></div>`;
   }
 
-  function heatmapHTML() {
+  function heatmapData() {
     const days = 7 * 15, cells = [], today = new Date();
+    let active = 0;
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(today); d.setDate(d.getDate() - i);
       const key = Store.dayKey(d.getTime());
-      cells.push(`<span class="hm ${Store.dayHasActivity(key) ? "on" : ""}" title="${key}"></span>`);
+      const on = Store.dayHasActivity(key);
+      if (on) active++;
+      cells.push(`<span class="hm ${on ? "on" : ""}" title="${key}"></span>`);
     }
-    return `<div class="heatmap">${cells.join("")}</div>`;
+    return { html: `<div class="heatmap">${cells.join("")}</div>`, active };
   }
   function measurementsCard() {
-    const parts = Store.MEAS_PARTS;
-    let h = `<div class="card"><h2>Body measurements</h2>
-      <div class="row">
-        <select id="meas-part" class="grow">${parts.map(p => `<option>${p}</option>`).join("")}</select>
-        <input id="meas-val" style="max-width:90px" inputmode="decimal" placeholder="cm">
-        <button class="btn-blue" data-action="add-measurement">Log</button>
-      </div>`;
-    const latest = parts.map(p => { const a = Store.measurementsByPart(p); return a.length ? { part: p, v: a[a.length - 1].value, series: a.map(x => x.value) } : null; }).filter(Boolean);
-    const charted = latest.slice().sort((a, b) => b.series.length - a.series.length)[0];
-    if (charted && charted.series.length >= 2) h += `<div class="spacer"></div><div class="muted" style="font-size:13px">${charted.part} trend</div>${lineChart(charted.series)}`;
-    if (latest.length) h += latest.map(l => `<div class="list-item"><span>${l.part}</span><strong>${l.v} cm</strong></div>`).join("");
-    return h + `</div>`;
+    const latest = Store.MEAS_PARTS.map(p => {
+      const a = Store.measurementsByPart(p);
+      if (!a.length) return null;
+      return { part: p, v: a[a.length - 1].value, delta: a[a.length - 1].value - a[0].value, since: a[0].date };
+    }).filter(Boolean);
+    let h = `<section class="card"><div class="row between"><h2 style="margin:0">Body measurements</h2>${latest.length ? `<span class="cap">since ${shortDate(latest[0].since)}</span>` : ""}</div>`;
+    if (latest.length) {
+      h += `<dl class="meas-grid">` + latest.map(l => {
+        const dtxt = l.delta === 0 ? "0.0" : `${l.delta < 0 ? "−" : "+"}${Math.abs(l.delta).toFixed(1)}`;
+        return `<div class="meas-tile"><dt>${l.part}</dt><dd><span class="meas-v">${l.v} cm</span><span class="meas-d">${dtxt}</span></dd></div>`;
+      }).join("") + `</dl>`;
+    } else {
+      h += `<p class="muted">No measurements yet — log your first below.</p>`;
+    }
+    return h + `<button class="wide-btn" data-action="log-measurement">${svgIcon("plus", 18, 2.4)} Log measurements</button></section>`;
   }
   function muscleCard() {
     const since = Date.now() - 7 * 86400000;
@@ -550,25 +563,41 @@
     const histExercises = Store.exercises().filter(x => histIds.has(x.id));
     if (statEx == null || !histIds.has(statEx)) statEx = histExercises.length ? histExercises[0].id : null;
 
-    let h = `<h1>Progress</h1>`;
+    let h = screenHeader("Progress", "How you're trending over time.");
 
+    // Body weight
     const latestBw = bw.length ? bw[bw.length - 1].value : null;
-    h += `<div class="card">
-      <div class="row between"><h2>Body weight</h2><strong>${latestBw != null ? latestBw + " " + u : "—"}</strong></div>
-      ${lineChart(bw.map(b => b.value))}
-      <div class="row" style="margin-top:8px">
-        <input id="bw-input" inputmode="decimal" placeholder="Today's weight (${u})">
-        <button class="btn-blue" data-action="add-bw">Log</button>
-      </div>
-    </div>`;
+    let bwHead = "";
+    if (bw.length >= 2) {
+      const last = bw[bw.length - 1];
+      const ref = bw.find(b => b.date >= last.date - 30 * 86400000) || bw[0];
+      const d = last.value - ref.value, days = Math.max(1, Math.round((last.date - ref.date) / 86400000));
+      bwHead = `<span class="delta" style="color:${d < 0 ? "var(--good)" : "var(--muted)"}">${d < 0 ? "−" : "+"}${Math.abs(d).toFixed(1)} ${u} in ${days} days</span>`;
+    }
+    h += `<section class="card">
+      <h2>Body weight</h2>
+      <div class="prog-head"><span class="prog-val">${latestBw != null ? latestBw + " " + u : "—"}</span>${bwHead}</div>
+      ${lineChart(bw.map(b => b.value), { left: bw.length ? shortDate(bw[0].date) : "", right: "Today" })}
+      <div class="row" style="margin-top:6px"><input id="bw-input" inputmode="decimal" placeholder="Log today's weight (${u})">
+        <button class="btn-accent" data-action="add-bw">Save</button></div>
+    </section>`;
 
+    // Volume per workout
     const vol = Calc.volumeSeries(ws).map(v => v.volume);
-    h += `<div class="card">
-      <div class="row between"><h2>Volume per workout</h2><span class="muted">${ws.length} logged</span></div>
-      ${lineChart(vol)}
-    </div>`;
+    let volHead = "";
+    if (vol.length >= 2) {
+      const back = Math.max(0, vol.length - 5), ago = vol.length - 1 - back, ref = vol[back];
+      const pct = ref ? Math.round((vol[vol.length - 1] - ref) / ref * 100) : 0;
+      volHead = `<span class="delta" style="color:${pct >= 0 ? "var(--good)" : "var(--muted)"}">${pct >= 0 ? "+" : ""}${pct}% vs ${ago} workout${ago === 1 ? "" : "s"} ago</span>`;
+    }
+    h += `<section class="card">
+      <h2>Volume per workout</h2>
+      <div class="prog-head"><span class="prog-val" style="font-size:28px">${vol.length ? vol[vol.length - 1].toLocaleString() + " " + u : "—"}</span>${volHead}</div>
+      ${lineChart(vol, { color: "var(--macro-c)", left: "Earliest", right: "Last workout" })}
+    </section>`;
 
-    h += `<div class="card"><h2>Exercise progress</h2>`;
+    // Exercise progress
+    h += `<section class="card"><h2>Exercise progress</h2>`;
     if (!histExercises.length) {
       h += `<p class="muted">Log a workout to see progress here.</p>`;
     } else {
@@ -576,31 +605,67 @@
         `<option value="${x.id}" ${x.id === statEx ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>`;
       const series = Calc.exerciseSeries(ws, statEx);
       const pr = Calc.personalRecords(ws, statEx);
-      h += `<div class="spacer"></div>
-        <div class="muted" style="font-size:13px">Estimated 1RM over time</div>
-        ${lineChart(series.map(s => s.oneRM))}
-        <div class="row wrap" style="margin-top:10px;gap:10px">
-          <div class="stat-box"><span class="muted">Best 1RM</span><br><strong>${Math.round(pr.best1RM)} ${u}</strong></div>
-          <div class="stat-box"><span class="muted">Heaviest</span><br><strong>${pr.maxWeight} ${u}</strong></div>
-          <div class="stat-box"><span class="muted">Best set</span><br><strong>${Math.round(pr.maxVolumeSet)} ${u}</strong></div>
-        </div>`;
+      let bestSet = null, bestOrm = 0;
+      ws.forEach(w => { const e = w.entries.find(x => x.exerciseId === statEx); if (!e) return;
+        e.sets.forEach(s => { if (s.type === "warmup") return; const o = Calc.epley1RM(s.weight, s.reps); if (o > bestOrm) { bestOrm = o; bestSet = s; } }); });
+      h += `<div style="margin:12px 0 2px">${lineChart(series.map(s => s.oneRM), { left: "Earliest", right: "Latest" })}</div>
+        <dl class="stat-grid">
+          <div class="stat-tile"><dt>Est. 1RM</dt><dd>${Math.round(pr.best1RM)} ${u}</dd></div>
+          <div class="stat-tile"><dt>Best set</dt><dd>${bestSet ? bestSet.weight + " × " + bestSet.reps : "—"}</dd></div>
+          <div class="stat-tile"><dt>Sessions</dt><dd>${series.length}</dd></div>
+        </dl>`;
     }
-    h += `</div>`;
+    h += `</section>`;
 
-    const prs = topPRs();
-    if (prs.length) {
-      h += `<div class="card"><h2>Top PRs</h2>` + prs.map((r, i) =>
-        `<div class="list-item"><div><strong>${i + 1}. ${esc(r.name)}</strong></div>
-          <span class="tag">${r.oneRM} ${u} 1RM</span></div>`).join("") + `</div>`;
-    }
-    h += muscleCard();
-    h += `<div class="card"><div class="row between"><h2>Activity</h2><span class="muted">last 15 weeks</span></div>${heatmapHTML()}</div>`;
+    // Personal records
+    const prs = topPRs().slice(0, 5);
+    h += `<section class="card"><h2>Personal records</h2>`;
+    h += prs.length
+      ? `<ol class="pr-list">` + prs.map((r, i) =>
+          `<li class="pr-row"><span class="pr-rank${i === 0 ? " top" : ""}">${i + 1}</span>
+            <span class="pr-name">${esc(r.name)}</span><span class="pr-val">${r.oneRM} ${u}</span></li>`).join("") +
+        `</ol><p class="cap" style="margin-top:8px">Ranked by estimated one-rep max.</p>`
+      : `<p class="muted">Log some sets to see your top lifts here.</p>`;
+    h += `</section>`;
+
+    // Activity
+    const hm = heatmapData();
+    h += `<section class="card"><div class="row between"><h2 style="margin:0">Activity</h2>
+      <span class="cap">${hm.active} active days · 15 weeks</span></div>
+      <div style="margin-top:12px">${hm.html}</div></section>`;
+
     h += measurementsCard();
+    h += onermCard(u);
+
+    // Extra features (not in the mockup, kept for parity with the built app)
+    h += muscleCard();
     h += photosCard();
     h += `<div class="row"><button class="btn-ghost grow" data-action="report" data-days="7">📄 Report</button>
-      <button class="btn-ghost grow" data-action="interval-timer">⏱ Interval timer</button>
-      <button class="btn-ghost grow" data-action="one-rm-tool">🧮 1RM</button></div>`;
+      <button class="btn-ghost grow" data-action="interval-timer">⏱ Interval timer</button></div>`;
     return h;
+  }
+
+  // Inline 1RM calculator (Progress screen). Live-updates via drawOneRM() wired in wireInputs().
+  let rmW = null, rmR = null;
+  function onermCard(u) {
+    const w = rmW != null ? rmW : 100, r = rmR != null ? rmR : 5;
+    return `<section class="card"><h2>1RM calculator</h2>
+      <div class="grid2 rm-inputs">
+        <label>Weight lifted (${u})<input id="rm-w" inputmode="decimal" value="${w}"></label>
+        <label>Reps done<input id="rm-r" inputmode="numeric" value="${r}"></label>
+      </div>
+      <div class="rm-out"><span class="cap">Your estimated max</span><span class="rm-max" id="rm-max"></span></div>
+      <div class="rm-grid" id="rm-grid"></div>
+    </section>`;
+  }
+  function drawOneRM() {
+    const wEl = appEl.querySelector("#rm-w"), rEl = appEl.querySelector("#rm-r");
+    if (!wEl || !rEl) return;
+    rmW = num(wEl.value); rmR = Math.max(1, Math.round(num(rEl.value)) || 1);
+    const orm = Math.round(Calc.epley1RM(rmW, rmR)), u = unit();
+    appEl.querySelector("#rm-max").textContent = `${orm} ${u}`;
+    appEl.querySelector("#rm-grid").innerHTML = [95, 90, 85, 80, 75, 70, 65, 60].map(p =>
+      `<div class="rm-cell"><span class="cap">${p}%</span><span class="rm-cell-v">${Math.round(orm * p / 100)}</span></div>`).join("");
   }
 
   // ---------- ACTIVE WORKOUT ----------
@@ -779,6 +844,10 @@
     });
     const statSel = appEl.querySelector("#stat-ex");
     if (statSel) statSel.addEventListener("change", () => { statEx = statSel.value; render(); });
+    if (appEl.querySelector("#rm-w")) {
+      appEl.querySelectorAll("#rm-w, #rm-r").forEach(el => el.addEventListener("input", drawOneRM));
+      drawOneRM();
+    }
     const unitSel = appEl.querySelector("#set-unit");
     if (unitSel) unitSel.addEventListener("change", () => {
       const to = unitSel.value;
@@ -850,7 +919,7 @@
         return render();
       }
       case "tdee": return tdeeModal();
-      case "one-rm-tool": return oneRMToolModal();
+      case "log-measurement": return logMeasurementModal();
       case "welcome-unit": welcomeUnit = a.v; return render();
       case "welcome-go": Store.setSetting("unit", welcomeUnit); localStorage.setItem("forge.welcomed", "1"); return go("today");
       case "add-measurement": {
@@ -1268,47 +1337,66 @@
   }
 
   function addFoodModal(meal) {
-    const canScan = "BarcodeDetector" in window;
-    openModal(`<div class="card" style="min-width:300px;max-height:85vh;overflow:auto">
-      <div class="row between"><h2>Add to ${esc(meal)}</h2><button data-action="modal-close" class="btn-sm">Close</button></div>
-      <div class="row"><input id="food-q" placeholder="Search food…" autofocus>
-        ${canScan ? `<button class="btn-sm" id="food-scan" aria-label="scan barcode">📷</button>` : ""}</div>
-      <button class="btn-sm btn-ghost btn-full" id="food-manual" style="margin-top:8px">＋ Manual entry</button>
-      <div id="food-results" style="margin-top:10px"><p class="muted">Search Open Food Facts, or your saved foods.</p></div>
+    openModal(`<div class="card af-sheet">
+      <div class="af-head">
+        <div><h2 class="af-title">Add to ${esc(meal)}</h2><p class="af-sub">Search, scan, or pick something recent.</p></div>
+        <button class="af-close" data-action="modal-close" aria-label="Close">${svgIcon("close", 20)}</button>
+      </div>
+      <div class="af-search-row">
+        <label class="af-search">${svgIcon("search", 20)}<input id="food-q" type="search" placeholder="Search foods, e.g. chicken" autofocus></label>
+        <button class="af-scan" id="food-scan" aria-label="Scan a barcode">${svgIcon("barcode", 22)}</button>
+      </div>
+      <div class="af-tabs" role="group" aria-label="Where to look">
+        <button class="af-tab on" data-tab="recent" aria-pressed="true">Recent</button>
+        <button class="af-tab" data-tab="mine" aria-pressed="false">My foods</button>
+        <button class="af-tab" data-tab="online" aria-pressed="false">Online</button>
+      </div>
+      <div class="af-list" id="food-results"></div>
+      <button class="wide-btn af-manual" id="food-manual">${svgIcon("plus", 18, 2.4)} Enter food manually</button>
+      <p class="af-foot">Online results come from Open Food Facts.</p>
     </div>`);
     const q = modal.querySelector("#food-q");
     const results = modal.querySelector("#food-results");
-    const listHTML = (items, heading) => items.length
-      ? `<p class="muted" style="font-size:12px;margin:8px 0 4px">${heading}</p>` + items.map(it =>
-          `<button type="button" class="list-item btn-ghost btn-full" data-food="${encodeURIComponent(JSON.stringify(it))}" style="text-align:left;border-radius:0">
-            <span><strong>${esc(it.name)}</strong><br><span class="muted">${Math.round(it.per100.kcal)} kcal/100g · P${Math.round(it.per100.p)} C${Math.round(it.per100.c)} F${Math.round(it.per100.f)}</span></span>
-          </button>`).join("")
-      : "";
-    const recents = Store.recentFoods(8);
-    results.innerHTML = listHTML(recents, "Recent") || `<p class="muted">Search Open Food Facts, or your saved foods.</p>`;
-    let timer;
-    const doSearch = async () => {
+    const recents = Store.recentFoods(30);
+    const num1 = (n) => { const r = Math.round(n * 10) / 10; return Number.isInteger(r) ? String(r) : r.toFixed(1); };
+    const rowHTML = (it) => `<button type="button" class="af-item" data-food="${encodeURIComponent(JSON.stringify(it))}">
+        <span class="af-item-t"><span class="af-item-name">${esc(it.name)}</span>
+          <span class="af-item-macros">per 100 g · ${Math.round(it.per100.kcal)} kcal · P ${num1(it.per100.p)} · C ${num1(it.per100.c)} · F ${num1(it.per100.f)}</span></span>
+        <span class="af-item-add">${svgIcon("plus", 18, 2.4)}</span></button>`;
+    const empty = (msg) => `<p class="af-empty">${msg}</p>`;
+    let tab = "recent", token = 0, timer;
+
+    const draw = () => {
       const term = q.value.trim();
-      const lib = Store.searchLibrary(term).map(f => ({ name: f.name, per100: f.per100, serving: f.serving }));
-      if (term.length < 2) {
-        results.innerHTML = (listHTML(recents, "Recent") + listHTML(lib, "Your foods")) || `<p class="muted">Type to search…</p>`;
-        return;
-      }
-      results.innerHTML = listHTML(lib, "Your foods") + `<p class="muted">Searching Open Food Facts…</p>`;
-      try {
-        const off = await searchOFF(term);
-        results.innerHTML = (listHTML(lib, "Your foods") + listHTML(off, "Open Food Facts")) || `<p class="muted">No results.</p>`;
-      } catch (_) {
-        results.innerHTML = listHTML(lib, "Your foods") + `<p class="muted">Couldn't reach Open Food Facts (offline?). Use manual entry.</p>`;
+      if (tab === "recent") {
+        const items = term ? recents.filter(r => r.name.toLowerCase().includes(term.toLowerCase())) : recents;
+        results.innerHTML = items.length ? items.map(rowHTML).join("") : empty(term ? "No recent foods match." : "Nothing logged yet — search Online or add manually.");
+      } else if (tab === "mine") {
+        const items = Store.searchLibrary(term).map(f => ({ name: f.name, per100: f.per100, serving: f.serving }));
+        results.innerHTML = items.length ? items.map(rowHTML).join("") : empty(term ? "No saved foods match." : "No saved foods yet — anything you add is saved here.");
+      } else {
+        if (term.length < 2) { results.innerHTML = empty("Type at least 2 letters to search Open Food Facts."); return; }
+        const my = ++token;
+        results.innerHTML = empty("Searching Open Food Facts…");
+        searchOFF(term)
+          .then(off => { if (my === token) results.innerHTML = off.length ? off.map(rowHTML).join("") : empty("No results."); })
+          .catch(() => { if (my === token) results.innerHTML = empty("Couldn't reach Open Food Facts (offline?). Use manual entry."); });
       }
     };
-    q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(doSearch, 350); });
+    draw();
+
+    modal.querySelectorAll(".af-tab").forEach(b => b.addEventListener("click", () => {
+      tab = b.dataset.tab;
+      modal.querySelectorAll(".af-tab").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-pressed", on); });
+      draw();
+    }));
+    q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(draw, tab === "online" ? 350 : 60); });
     results.addEventListener("click", (e) => {
       const b = e.target.closest("[data-food]");
       if (b) portionModal(meal, JSON.parse(decodeURIComponent(b.dataset.food)));
     });
     modal.querySelector("#food-manual").onclick = () => manualFoodModal(meal);
-    if (canScan) modal.querySelector("#food-scan").onclick = () => barcodeScanModal(meal);
+    modal.querySelector("#food-scan").onclick = () => barcodeScanModal(meal);
   }
 
   function portionModal(meal, item) {
@@ -1471,25 +1559,21 @@
     };
   }
 
-  function oneRMToolModal() {
-    const u = unit();
-    const pcts = [100, 95, 90, 85, 80, 75, 70, 65, 60];
-    openModal(`<div class="card" style="min-width:280px;max-height:85vh;overflow:auto">
-      <div class="row between"><h2>1RM & % table</h2><button data-action="modal-close" class="btn-sm">Close</button></div>
-      <div class="row"><div class="grow"><label>Weight (${u})</label><input id="rm-w" inputmode="decimal" placeholder="100"></div>
-        <div class="grow"><label>Reps</label><input id="rm-r" inputmode="numeric" placeholder="5"></div></div>
-      <div id="rm-out" style="margin-top:12px"></div>
+  function logMeasurementModal() {
+    openModal(`<div class="card" style="min-width:280px">
+      <div class="row between"><h2>Log measurement</h2><button data-action="modal-close" class="btn-sm">Close</button></div>
+      <label>Body part</label>
+      <select id="lm-part">${Store.MEAS_PARTS.map(p => `<option>${p}</option>`).join("")}</select>
+      <label>Measurement (cm)</label><input id="lm-val" inputmode="decimal" placeholder="e.g. 82" autofocus>
+      <div class="spacer"></div>
+      <div class="row"><span class="grow"></span><button class="btn-accent" id="lm-save">Save</button></div>
     </div>`);
-    const out = modal.querySelector("#rm-out");
-    const draw = () => {
-      const orm = Math.round(Calc.epley1RM(+modal.querySelector("#rm-w").value, +modal.querySelector("#rm-r").value || 1));
-      out.innerHTML = orm
-        ? `<p>Estimated 1RM: <strong>${orm} ${u}</strong></p>` + pcts.map(p =>
-            `<div class="list-item"><span class="muted">${p}%</span><strong>${Math.round(orm * p / 100)} ${u}</strong></div>`).join("")
-        : `<p class="muted">Enter a weight and reps.</p>`;
+    modal.querySelector("#lm-save").onclick = () => {
+      const part = modal.querySelector("#lm-part").value, val = modal.querySelector("#lm-val").value;
+      if (!val) return;
+      Store.addMeasurement({ part, value: val });
+      modal.close(); render();
     };
-    modal.querySelectorAll("input").forEach(el => el.addEventListener("input", draw));
-    draw();
   }
 
   // progress photos — resize to keep them small, store in a separate key
