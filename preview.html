@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge — device preview</title>
+<style>
+  body { margin: 0; background: #16181d; color: #e8e8ea; font: 14px/1.4 system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+           padding: 12px 16px; background: #0e0f14; border-bottom: 1px solid #2c3039; }
+  header b { font-size: 15px; margin-right: 8px; }
+  header button { font: inherit; cursor: pointer; color: #e8e8ea; background: #1d2028; border: 1px solid #2c3039;
+                  border-radius: 8px; padding: 6px 12px; }
+  header button:hover { border-color: #4f9dff; }
+  .frames { display: flex; flex-wrap: wrap; gap: 22px; padding: 22px; align-items: flex-start; }
+  figure { margin: 0; }
+  figcaption { text-align: center; color: #9a9ca5; font-size: 12px; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+  .device { border: 10px solid #000; border-radius: 28px; box-shadow: 0 10px 40px rgba(0,0,0,.5); background: #000; overflow: hidden; }
+  iframe { display: block; border: 0; background: #0a0b0f; }
+</style>
+</head>
+<body>
+<header>
+  <b>Forge device preview</b>
+  <span>route:</span>
+  <button data-r="today">Today</button>
+  <button data-r="train">Train</button>
+  <button data-r="fuel">Fuel</button>
+  <button data-r="stats">Progress</button>
+  <button data-r="more">More</button>
+  <button data-r="settings">Settings</button>
+  <button data-r="welcome">Welcome</button>
+</header>
+<div class="frames" id="frames"></div>
+<script>
+  // Real phone viewports (CSS px). Rendered at actual size — no scaling.
+  const DEVICES = [
+    { name: "iPhone SE", w: 320, h: 568 },
+    { name: "Android compact", w: 360, h: 640 },
+    { name: "iPhone 12–14", w: 390, h: 844 },
+    { name: "Pixel 7", w: 412, h: 915 },
+    { name: "15 Pro Max", w: 430, h: 932 },
+  ];
+  const frames = document.getElementById("frames");
+  DEVICES.forEach(d => {
+    const fig = document.createElement("figure");
+    fig.innerHTML = `<figcaption>${d.name} · ${d.w}×${d.h} · ${(d.h/d.w).toFixed(2)}:1</figcaption>
+      <div class="device" style="width:${d.w}px;height:${d.h}px">
+        <iframe src="./index.html#/today" width="${d.w}" height="${d.h}"></iframe></div>`;
+    frames.appendChild(fig);
+  });
+  document.querySelectorAll("header button").forEach(b =>
+    b.addEventListener("click", () => document.querySelectorAll("iframe").forEach(f => {
+      try { f.contentWindow.location.hash = "#/" + b.dataset.r; } catch (_) {}
+    })));
+</script>
+</body>
+</html>

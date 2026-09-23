@@ -11,3 +11,6 @@ android/
 ios/
 
 .DS_Store
+
+signing/
+shots/

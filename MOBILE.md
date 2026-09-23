@@ -62,6 +62,31 @@ cd android; .\gradlew.bat :app:assembleDebug
 macOS + Xcode + **Apple Developer $99/yr**. `npm run cap:add:ios` → `npm run cap:open:ios`.
 `capacitor-health` covers HealthKit too; add the HealthKit usage strings to `Info.plist`.
 
+## Preview at phone ratios (on the laptop)
+- **Manual:** `python -m http.server 8000`, open <http://127.0.0.1:8000/preview.html> — tiles the
+  app in real device frames (320 / 360 / 390 / 412 / 430) with route buttons.
+- **Automated screenshots:** `node scripts/shots.mjs` (needs the server running + Chrome) writes
+  `shots/*.png` for the key screens at 320 / 390 / 430. Both are dev-only (git-ignored output).
+
+## Signed release build (for the Play Store)
+Upload key lives in **`signing/`** (git-ignored): `upload.jks` + `keystore.properties`
+(storeFile / storePassword / keyAlias / keyPassword). **Keep these safe — save the password in a
+password manager.** Build the signed **AAB** (Play upload artifact) by injecting the signing config,
+so no build.gradle edits are needed:
+```powershell
+$env:JAVA_HOME="C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot"
+$env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"
+$p = Get-Content signing\keystore.properties | ConvertFrom-StringData
+cd android; .\gradlew.bat :app:bundleRelease `
+  "-Pandroid.injected.signing.store.file=$($p.storeFile)" `
+  "-Pandroid.injected.signing.store.password=$($p.storePassword)" `
+  "-Pandroid.injected.signing.key.alias=$($p.keyAlias)" `
+  "-Pandroid.injected.signing.key.password=$($p.keyPassword)"
+# → android/app/build/outputs/bundle/release/app-release.aab   (upload this to Play)
+```
+Use `:app:assembleRelease` instead for a signed `.apk` to sideload. **Privacy policy** for the
+Play data-safety form: `privacy.html` (live at `<site>/privacy.html`).
+
 ## Notes
 - **App id** `com.manishkumar.forge` (`capacitor.config.json`) — change before publishing if you want.
 - **Fonts** load from the Google Fonts CDN, so first launch needs network. Bundle Archivo + IBM

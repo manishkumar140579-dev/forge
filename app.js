@@ -323,7 +323,7 @@
     </nav>`;
     h += `<section class="card privacy">
       <span class="mrow-ico shield">${svgIcon("shield")}</span>
-      <div><h2 class="priv-t">Your data stays on this phone</h2><p class="cap">No account, no sign-in. Make a backup any time from Settings.</p></div>
+      <div><h2 class="priv-t">Your data stays on this phone</h2><p class="cap">No account, no sign-in. Make a backup any time from Settings. <a href="privacy.html" style="color:var(--accent)">Privacy policy</a></p></div>
     </section>`;
     h += `<p class="version">Forge · offline-first</p>`;
     return h;

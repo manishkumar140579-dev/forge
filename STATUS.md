@@ -25,7 +25,9 @@ Clean-room build inspired by the GPL app "Iron" — **no GPL code is used**, so 
 - **Phase 1 + 2 done and verified:** the PWA is wrapped by Capacitor 8; **a debug APK builds** (`android/app/build/outputs/apk/debug/app-debug.apk`, ~6 MB) with the **`capacitor-health`** plugin compiled in.
 - **Toolchain (installed on this machine):** JDK 21 (Capacitor 8 needs 21, not 17), Android SDK (cmdline-tools + android-36 + build-tools 36). Android Studio installing.
 - **Steps from Health:** `health.js` → Health Connect / HealthKit → `Store.setSteps()`; Settings → Steps & Health → Connect. `scripts/patch-android.mjs` re-applies minSdk 26 + the Health Connect manifest entries after any `cap:add`/`cap:sync`.
-- **Remaining for Phase 2:** test on a physical device (needs the Google Health Connect app) + a privacy policy for store submission. See **`MOBILE.md`**.
+- **Remaining for Phase 2:** test on a physical device (needs the Google Health Connect app). See **`MOBILE.md`**.
+- **Phase 3 groundwork done:** privacy policy page (`privacy.html`, linked from More), release signing set up (`signing/` keystore, git-ignored), and a **signed release AAB builds** (`android/app/build/outputs/bundle/release/app-release.aab`). Remaining: create the Play Console account ($25), fill the listing + data-safety form, upload the AAB.
+- **Laptop preview:** `preview.html` tiles the app at 5 phone ratios; `node scripts/shots.mjs` screenshots key screens. Fixed a 320px overflow on the Today calories card.
 
 ## ⏳ Pending — needs money / infrastructure (not built)
 - **Cloud sync / multi-device accounts** — needs a hosted backend (free tier: Supabase or Firebase).

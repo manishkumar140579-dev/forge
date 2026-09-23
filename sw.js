@@ -1,7 +1,7 @@
 // sw.js — cache-first offline shell. Bump CACHE to ship an update.
-const CACHE = "forge-v18";
+const CACHE = "forge-v19";
 const ASSETS = [
-  "./", "./index.html", "./app.css",
+  "./", "./index.html", "./privacy.html", "./app.css",
   "./qrcode.js", "./calc.js", "./store.js", "./health.js", "./app.js",
   "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-180.png",
 ];
