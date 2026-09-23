@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Forge — Today</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#050608}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+button,input,select{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 1320px; position: relative; overflow: hidden; background: #0a0b0f; color: #f2f1ee; font-family: 'IBM Plex Sans', system-ui, sans-serif;">
+<main style="box-sizing: border-box; padding: 56px 20px 112px; display: flex; flex-direction: column; gap: 14px;">
+<header style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-bottom: 6px;">
+<div style="display: flex; flex-direction: column; gap: 2px;">
+<p style="margin: 0; font-size: 14px; color: #9a9ca5;">Wednesday, 23 September</p>
+<h1 style="margin: 0; font-family: Archivo, sans-serif; font-size: 34px; font-weight: 800; letter-spacing: -0.02em;">Today</h1>
+</div>
+<div style="display: flex; align-items: center; gap: 6px;">
+<button type="button" aria-label="Previous day" style="width: 46px; height: 46px; border-radius: 14px; background: #1d2028; border: 1px solid #2c3039; color: #f2f1ee; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+<button type="button" aria-label="Next day" style="width: 46px; height: 46px; border-radius: 14px; background: #1d2028; border: 1px solid #2c3039; color: #f2f1ee; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button>
+</div>
+</header>
+
+<section aria-labelledby="cal-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 16px;">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<h2 id="cal-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Calories</h2>
+<span style="font-size: 13px; color: #9a9ca5; font-variant-numeric: tabular-nums;">Goal 2,400</span>
+</div>
+<div style="display: flex; align-items: center; gap: 20px;">
+<div style="position: relative; width: 148px; height: 148px; flex-shrink: 0;">
+<svg width="148" height="148" viewBox="0 0 148 148" aria-hidden="true"><circle cx="74" cy="74" r="64" fill="none" stroke="#22252e" stroke-width="14"></circle><circle cx="74" cy="74" r="64" fill="none" stroke="{{accent}}" stroke-width="14" stroke-linecap="round" stroke-dasharray="275 402" transform="rotate(-90 74 74)"></circle></svg>
+<div style="position: absolute; left: 0; top: 0; width: 148px; height: 148px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+<span style="font-family: Archivo, sans-serif; font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums;">1,640</span>
+<span style="font-size: 12px; color: #9a9ca5;">kcal eaten</span>
+</div>
+</div>
+<dl style="margin: 0; display: flex; flex-direction: column; gap: 10px; flex-grow: 1;">
+<div style="display: flex; justify-content: space-between;"><dt style="font-size: 14px; color: #9a9ca5;">Eaten</dt><dd style="margin: 0; font-weight: 600; font-variant-numeric: tabular-nums;">1,640</dd></div>
+<div style="display: flex; justify-content: space-between;"><dt style="font-size: 14px; color: #9a9ca5;">Burned</dt><dd style="margin: 0; font-weight: 600; font-variant-numeric: tabular-nums;">320</dd></div>
+<div style="display: flex; justify-content: space-between;"><dt style="font-size: 14px; color: #9a9ca5;">Remaining</dt><dd style="margin: 0; font-weight: 700; color: #3ecf8e; font-variant-numeric: tabular-nums;">1,080</dd></div>
+<div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid #22252e;"><dt style="font-size: 13px; color: #9a9ca5;">Net today</dt><dd style="margin: 0; font-size: 13px; color: #c9cbd1; font-variant-numeric: tabular-nums;">1,320 kcal</dd></div>
+</dl>
+</div>
+</section>
+
+<section aria-labelledby="mac-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+<h2 id="mac-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Macros</h2>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; justify-content: space-between; font-size: 15px;"><span style="font-weight: 600;">Protein</span><span style="color: #c9cbd1; font-variant-numeric: tabular-nums;">117 / 160 g</span></div>
+<div style="height: 8px; border-radius: 4px; background: #22252e;"><div style="width: 73%; height: 8px; border-radius: 4px; background: #ff6b8a;"></div></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; justify-content: space-between; font-size: 15px;"><span style="font-weight: 600;">Carbs</span><span style="color: #c9cbd1; font-variant-numeric: tabular-nums;">187 / 260 g</span></div>
+<div style="height: 8px; border-radius: 4px; background: #22252e;"><div style="width: 72%; height: 8px; border-radius: 4px; background: #5cb8ff;"></div></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; justify-content: space-between; font-size: 15px;"><span style="font-weight: 600;">Fat</span><span style="color: #c9cbd1; font-variant-numeric: tabular-nums;">48 / 70 g</span></div>
+<div style="height: 8px; border-radius: 4px; background: #22252e;"><div style="width: 69%; height: 8px; border-radius: 4px; background: #f5c542;"></div></div>
+</div>
+</section>
+
+<section aria-labelledby="wat-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<h2 id="wat-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Water</h2>
+<span style="font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums;">{{water}} / 8 glasses</span>
+</div>
+<div style="display: flex; align-items: center; gap: 10px;">
+<button type="button" onClick="{{removeWater}}" aria-label="Remove a glass" style="width: 46px; height: 46px; border-radius: 14px; background: #1d2028; border: 1px solid #2c3039; color: #f2f1ee; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+<div aria-hidden="true" style="flex-grow: 1; display: flex; justify-content: space-between;">
+<sc-for list="{{glasses}}" as="g" hint-placeholder-count="8">
+<svg width="22" height="26" viewBox="0 0 24 28" aria-hidden="true"><path d="M5 4h14l-1.8 20H6.8z" fill="{{g.fill}}" stroke="{{g.stroke}}" stroke-width="2" stroke-linejoin="round"></path></svg>
+</sc-for>
+</div>
+<button type="button" onClick="{{addWater}}" aria-label="Add a glass" style="width: 46px; height: 46px; border-radius: 14px; background: #5cb8ff; border: 0; color: #06121c; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+</div>
+</section>
+
+<section aria-labelledby="tr-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+<h2 id="tr-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Training</h2>
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<p style="margin: 0; font-size: 17px; font-weight: 600;">No workout yet today</p>
+<p style="margin: 0; font-size: 14px; color: #9a9ca5;">0 sessions · 0 kg lifted</p>
+</div>
+<a href="Train.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; border-radius: 14px; background: {{accent}}; color: #1a0b05; font-weight: 700; font-size: 16px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Start workout</a>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+<div style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #9a9ca5;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{accent}}" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 .3 1.8 1.2 2.8 2.5 3-.5-3 0-5.5 0-8z"></path></svg>Streak</span>
+<span style="font-family: Archivo, sans-serif; font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums;">3 days</span>
+</div>
+<div style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 13px; color: #9a9ca5;">Protein left</span>
+<span style="font-family: Archivo, sans-serif; font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums;">43 g</span>
+</div>
+</div>
+
+<section aria-labelledby="in-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+<h2 id="in-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Tips for today</h2>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.4;">
+<li style="display: flex; gap: 10px;"><span style="width: 8px; height: 8px; border-radius: 4px; background: {{accent}}; margin-top: 7px; flex-shrink: 0;"></span>43 g protein to go. A shake would cover most of it.</li>
+<li style="display: flex; gap: 10px;"><span style="width: 8px; height: 8px; border-radius: 4px; background: {{accent}}; margin-top: 7px; flex-shrink: 0;"></span>3-day streak. Train today to make it 4.</li>
+<li style="display: flex; gap: 10px;"><span style="width: 8px; height: 8px; border-radius: 4px; background: {{accent}}; margin-top: 7px; flex-shrink: 0;"></span>1,080 kcal left for the rest of the day.</li>
+</ul>
+</section>
+</main>
+
+<nav aria-label="Main" style="position: absolute; left: 0; bottom: 0; width: 390px; height: 88px; box-sizing: border-box; padding: 8px 6px 28px; background: #0e0f14; border-top: 1px solid #22252e; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));">
+<a href="Main.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #f2f1ee;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: {{accent}}; color: #1a0b05;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l2.5 2.5"></path></svg></span>Today</a>
+<a href="Train.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"></path></svg></span>Train</a>
+<a href="Fuel.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v7a2 2 0 0 0 4 0V3M9 12v9M16 21V3c2.2 0 3.5 2.5 3.5 6s-1.3 4-3.5 4"></path></svg></span>Fuel</a>
+<a href="Progress.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M5 16l4-5 3.5 3L19 6"></path></svg></span>Progress</a>
+<a href="More.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"></rect><rect x="14" y="4" width="6" height="6" rx="1.5"></rect><rect x="4" y="14" width="6" height="6" rx="1.5"></rect><rect x="14" y="14" width="6" height="6" rx="1.5"></rect></svg></span>More</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#ff6a3d","options":["#ff6a3d","#4f9dff","#3ecf8e","#b58cff"]},"$preview":{"width":390,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const water = s.water != null ? s.water : 5;
+    const glasses = [];
+    for (let i = 0; i < 8; i++) {
+      const on = i < water;
+      glasses.push({ fill: on ? '#5cb8ff' : 'none', stroke: on ? '#5cb8ff' : '#3a3e49' });
+    }
+    return {
+      accent: this.props.accent ?? '#ff6a3d',
+      water: water,
+      glasses: glasses,
+      addWater: () => this.setState({ water: Math.min(12, water + 1) }),
+      removeWater: () => this.setState({ water: Math.max(0, water - 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

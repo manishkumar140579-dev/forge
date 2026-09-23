@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Forge — Progress</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#050608}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+button,input,select{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 2400px; position: relative; overflow: hidden; background: #0a0b0f; color: #f2f1ee; font-family: 'IBM Plex Sans', system-ui, sans-serif;">
+<main style="box-sizing: border-box; padding: 56px 20px 112px; display: flex; flex-direction: column; gap: 14px;">
+<header style="display: flex; flex-direction: column; gap: 2px; padding-bottom: 6px;">
+<h1 style="margin: 0; font-family: Archivo, sans-serif; font-size: 34px; font-weight: 800; letter-spacing: -0.02em;">Progress</h1>
+<p style="margin: 0; font-size: 15px; color: #9a9ca5;">How you're trending over time.</p>
+</header>
+
+<section aria-labelledby="bw-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+<h2 id="bw-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Body weight</h2>
+<div style="display: flex; align-items: baseline; gap: 10px;">
+<span style="font-family: Archivo, sans-serif; font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums;">78.4 kg</span>
+<span style="font-size: 14px; font-weight: 600; color: #3ecf8e;">−1.2 kg in 30 days</span>
+</div>
+<svg width="310" height="110" viewBox="0 0 310 110" role="img" aria-label="Body weight trending down from 79.6 to 78.4 kg over 30 days">
+<path d="M0 5H310M0 55H310M0 105H310" stroke="#22252e" stroke-width="1" fill="none"></path>
+<polyline points="0,27 28,16 56,38 85,33 113,55 141,49 169,66 197,61 225,77 254,72 282,88 310,94" fill="none" stroke="{{accent}}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+<circle cx="306" cy="94" r="4" fill="{{accent}}"></circle>
+</svg>
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #9a9ca5;"><span>24 Aug</span><span>Today</span></div>
+<div style="display: flex; gap: 8px; align-items: flex-end;">
+<label style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #9a9ca5;">Log today's weight (kg)<input type="number" inputmode="decimal" placeholder="78.4" style="height: 46px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; background: #0f1116; border: 1px solid #2c3039; color: #f2f1ee; font-size: 16px;"></label>
+<button type="button" style="height: 46px; padding: 0 18px; border-radius: 12px; background: {{accent}}; border: 0; color: #1a0b05; font-weight: 700; font-size: 15px; cursor: pointer;">Save</button>
+</div>
+</section>
+
+<section aria-labelledby="vol-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+<h2 id="vol-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Volume per workout</h2>
+<div style="display: flex; align-items: baseline; gap: 10px;">
+<span style="font-family: Archivo, sans-serif; font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums;">11,400 kg</span>
+<span style="font-size: 14px; font-weight: 600; color: #3ecf8e;">+19% vs 4 workouts ago</span>
+</div>
+<svg width="310" height="110" viewBox="0 0 310 110" role="img" aria-label="Workout volume rising from 8,200 to 11,400 kg over the last 8 workouts">
+<path d="M0 5H310M0 55H310M0 105H310" stroke="#22252e" stroke-width="1" fill="none"></path>
+<polyline points="0,89 44,69 89,78 133,58 177,45 221,54 266,29 310,18" fill="none" stroke="#5cb8ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+<circle cx="306" cy="18" r="4" fill="#5cb8ff"></circle>
+</svg>
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #9a9ca5;"><span>8 workouts ago</span><span>Last workout</span></div>
+</section>
+
+<section aria-labelledby="ex-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+<h2 id="ex-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Exercise progress</h2>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #9a9ca5;">Exercise
+<select style="height: 46px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; background: #0f1116; border: 1px solid #2c3039; color: #f2f1ee; font-size: 16px;"><option>Bench Press</option><option>Squat</option><option>Deadlift</option><option>Overhead Press</option></select>
+</label>
+<svg width="310" height="110" viewBox="0 0 310 110" role="img" aria-label="Bench press estimated 1RM rising from 104 to 117 kg">
+<path d="M0 5H310M0 55H310M0 105H310" stroke="#22252e" stroke-width="1" fill="none"></path>
+<polyline points="0,85 44,75 89,75 133,60 177,55 221,45 266,40 310,20" fill="none" stroke="{{accent}}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+<circle cx="306" cy="20" r="4" fill="{{accent}}"></circle>
+</svg>
+<dl style="margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+<div style="padding: 12px; border-radius: 12px; background: #0f1116; display: flex; flex-direction: column; gap: 2px;"><dt style="font-size: 12px; color: #9a9ca5;">Est. 1RM</dt><dd style="margin: 0; font-family: Archivo, sans-serif; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums;">117 kg</dd></div>
+<div style="padding: 12px; border-radius: 12px; background: #0f1116; display: flex; flex-direction: column; gap: 2px;"><dt style="font-size: 12px; color: #9a9ca5;">Best set</dt><dd style="margin: 0; font-family: Archivo, sans-serif; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums;">100 × 5</dd></div>
+<div style="padding: 12px; border-radius: 12px; background: #0f1116; display: flex; flex-direction: column; gap: 2px;"><dt style="font-size: 12px; color: #9a9ca5;">Sessions</dt><dd style="margin: 0; font-family: Archivo, sans-serif; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums;">18</dd></div>
+</dl>
+</section>
+
+<section aria-labelledby="pr-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 8px;">
+<h2 id="pr-h" style="margin: 0 0 4px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Personal records</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column;">
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #22252e;"><span style="width: 32px; height: 32px; border-radius: 10px; background: {{accent}}; color: #1a0b05; display: flex; align-items: center; justify-content: center; font-family: Archivo, sans-serif; font-weight: 800;">1</span><span style="flex-grow: 1; font-weight: 600;">Deadlift</span><span style="font-family: Archivo, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums;">182 kg</span></li>
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #22252e;"><span style="width: 32px; height: 32px; border-radius: 10px; background: #262a33; display: flex; align-items: center; justify-content: center; font-family: Archivo, sans-serif; font-weight: 800;">2</span><span style="flex-grow: 1; font-weight: 600;">Squat</span><span style="font-family: Archivo, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums;">146 kg</span></li>
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #22252e;"><span style="width: 32px; height: 32px; border-radius: 10px; background: #262a33; display: flex; align-items: center; justify-content: center; font-family: Archivo, sans-serif; font-weight: 800;">3</span><span style="flex-grow: 1; font-weight: 600;">Bench Press</span><span style="font-family: Archivo, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums;">117 kg</span></li>
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #22252e;"><span style="width: 32px; height: 32px; border-radius: 10px; background: #262a33; display: flex; align-items: center; justify-content: center; font-family: Archivo, sans-serif; font-weight: 800;">4</span><span style="flex-grow: 1; font-weight: 600;">Barbell Row</span><span style="font-family: Archivo, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums;">98 kg</span></li>
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0;"><span style="width: 32px; height: 32px; border-radius: 10px; background: #262a33; display: flex; align-items: center; justify-content: center; font-family: Archivo, sans-serif; font-weight: 800;">5</span><span style="flex-grow: 1; font-weight: 600;">Overhead Press</span><span style="font-family: Archivo, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums;">72 kg</span></li>
+</ol>
+<p style="margin: 0; font-size: 12px; color: #9a9ca5;">Ranked by estimated one-rep max.</p>
+</section>
+
+<section aria-labelledby="hm-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline;">
+<h2 id="hm-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Activity</h2>
+<span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;">{{activeDays}} active days · 15 weeks</span>
+</div>
+<div aria-hidden="true" style="display: grid; grid-template-rows: repeat(7, 16px); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px;">
+<sc-for list="{{cells}}" as="cell" hint-placeholder-count="105">
+<div style="border-radius: 4px; background: {{cell.bg}}; opacity: {{cell.op}};"></div>
+</sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #9a9ca5;"><span>June</span><span>This week</span></div>
+</section>
+
+<section aria-labelledby="ms-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline;">
+<h2 id="ms-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Body measurements</h2>
+<span style="font-size: 12px; color: #9a9ca5;">Change since 1 Aug</span>
+</div>
+<dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+<div style="padding: 12px; border-radius: 12px; background: #0f1116; display: flex; flex-direction: column; gap: 2px;"><dt style="font-size: 13px; color: #9a9ca5;">Waist</dt><dd style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: Archivo, sans-serif; font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums;">82.0 cm</span><span style="font-size: 13px; font-weight: 600; color: #3ecf8e;">−1.5</span></dd></div>
+<div style="padding: 12px; border-radius: 12px; background: #0f1116; display: flex; flex-direction: column; gap: 2px;"><dt style="font-size: 13px; color: #9a9ca5;">Chest</dt><dd style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: Archivo, sans-serif; font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums;">102.0 cm</span><span style="font-size: 13px; font-weight: 600; color: #3ecf8e;">+0.5</span></dd></div>
+<div style="padding: 12px; border-radius: 12px; background: #0f1116; display: flex; flex-direction: column; gap: 2px;"><dt style="font-size: 13px; color: #9a9ca5;">Arms</dt><dd style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: Archivo, sans-serif; font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums;">37.5 cm</span><span style="font-size: 13px; font-weight: 600; color: #3ecf8e;">+0.5</span></dd></div>
+<div style="padding: 12px; border-radius: 12px; background: #0f1116; display: flex; flex-direction: column; gap: 2px;"><dt style="font-size: 13px; color: #9a9ca5;">Thighs</dt><dd style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: Archivo, sans-serif; font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums;">58.0 cm</span><span style="font-size: 13px; font-weight: 600; color: #9a9ca5;">0.0</span></dd></div>
+</dl>
+<button type="button" style="height: 46px; border-radius: 12px; background: #1d2028; border: 1px solid #2c3039; color: #f2f1ee; font-weight: 600; font-size: 15px; cursor: pointer;">+ Log measurements</button>
+</section>
+
+<section aria-labelledby="calc-h" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+<h2 id="calc-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">1RM calculator</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #9a9ca5;">Weight lifted (kg)<input type="number" inputmode="decimal" value="{{w}}" onChange="{{setW}}" style="height: 50px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; background: #0f1116; border: 1px solid #2c3039; color: #f2f1ee; font-family: Archivo, sans-serif; font-size: 20px; font-weight: 700;"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #9a9ca5;">Reps done<input type="number" inputmode="numeric" value="{{r}}" onChange="{{setR}}" style="height: 50px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; background: #0f1116; border: 1px solid #2c3039; color: #f2f1ee; font-family: Archivo, sans-serif; font-size: 20px; font-weight: 700;"></label>
+</div>
+<div style="padding: 14px; border-radius: 14px; background: #0f1116; border: 1px solid {{accent}}; display: flex; justify-content: space-between; align-items: baseline;">
+<span style="font-size: 14px; color: #c9cbd1;">Your estimated max</span>
+<span style="font-family: Archivo, sans-serif; font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums;">{{ormText}} kg</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;">
+<sc-for list="{{pcts}}" as="pc" hint-placeholder-count="8">
+<div style="padding: 10px 6px; border-radius: 10px; background: #1d2028; display: flex; flex-direction: column; align-items: center; gap: 2px;"><span style="font-size: 12px; color: #9a9ca5;">{{pc.p}}</span><span style="font-family: Archivo, sans-serif; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums;">{{pc.kg}}</span></div>
+</sc-for>
+</div>
+</section>
+</main>
+
+<nav aria-label="Main" style="position: absolute; left: 0; bottom: 0; width: 390px; height: 88px; box-sizing: border-box; padding: 8px 6px 28px; background: #0e0f14; border-top: 1px solid #22252e; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));">
+<a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l2.5 2.5"></path></svg></span>Today</a>
+<a href="Train.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"></path></svg></span>Train</a>
+<a href="Fuel.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v7a2 2 0 0 0 4 0V3M9 12v9M16 21V3c2.2 0 3.5 2.5 3.5 6s-1.3 4-3.5 4"></path></svg></span>Fuel</a>
+<a href="Progress.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #f2f1ee;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: {{accent}}; color: #1a0b05;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M5 16l4-5 3.5 3L19 6"></path></svg></span>Progress</a>
+<a href="More.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"></rect><rect x="14" y="4" width="6" height="6" rx="1.5"></rect><rect x="4" y="14" width="6" height="6" rx="1.5"></rect><rect x="14" y="14" width="6" height="6" rx="1.5"></rect></svg></span>More</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#ff6a3d","options":["#ff6a3d","#4f9dff","#3ecf8e","#b58cff"]},"$preview":{"width":390,"height":2400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const accent = this.props.accent ?? '#ff6a3d';
+    const w = s.w != null ? s.w : 100;
+    const r = s.r != null ? s.r : 5;
+    const orm = r <= 1 ? w : w * (1 + r / 30);
+    const half = (x) => String(Math.round(x * 2) / 2);
+    const pcts = [95, 90, 85, 80, 75, 70, 65, 60].map((p) => ({ p: p + '%', kg: half((orm * p) / 100) }));
+    const cells = [];
+    let activeDays = 0;
+    for (let i = 0; i < 105; i++) {
+      const future = i > 101;
+      const v = (i * 37 + 11) % 10;
+      const active = !future && (v < 4 || (i % 7 === 1 && v < 7));
+      if (active) activeDays++;
+      cells.push({
+        bg: future ? '#0f1116' : active ? accent : '#1d2028',
+        op: active && v >= 2 ? 0.6 : 1
+      });
+    }
+    return {
+      accent: accent,
+      w: w,
+      r: r,
+      ormText: String(Math.round(orm)),
+      pcts: pcts,
+      cells: cells,
+      activeDays: activeDays,
+      setW: (e) => this.setState({ w: Math.max(0, Number(e.target.value) || 0) }),
+      setR: (e) => this.setState({ r: Math.max(0, Math.round(Number(e.target.value) || 0)) })
+    };
+  }
+}
+</script>
+</body>
+</html>

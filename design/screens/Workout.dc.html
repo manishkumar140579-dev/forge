@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Forge — Workout logger</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#050608}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+button,input,select{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 1360px; position: relative; overflow: hidden; background: #0a0b0f; color: #f2f1ee; font-family: 'IBM Plex Sans', system-ui, sans-serif;">
+<main style="box-sizing: border-box; padding: 52px 16px 200px; display: flex; flex-direction: column; gap: 14px;">
+<header style="display: flex; align-items: center; gap: 10px;">
+<a href="Train.dc.html" aria-label="Back to Train" style="width: 46px; height: 46px; border-radius: 14px; background: #1d2028; border: 1px solid #2c3039; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+<button type="button" aria-label="Rename workout" style="background: none; border: 0; padding: 0; color: #f2f1ee; display: flex; align-items: center; gap: 6px; font-family: Archivo, sans-serif; font-size: 20px; font-weight: 700; cursor: pointer; text-align: left;">Morning Workout<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9a9ca5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"></path></svg></button>
+<p style="margin: 0; font-size: 13px; color: #9a9ca5; font-variant-numeric: tabular-nums;">{{elapsedText}} · {{doneCount}} of {{totalSets}} sets done</p>
+</div>
+<button type="button" aria-label="Plate calculator" style="width: 46px; height: 46px; border-radius: 14px; background: #1d2028; border: 1px solid #2c3039; color: #f2f1ee; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; flex-shrink: 0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="2.5"></circle></svg></button>
+<a href="Main.dc.html" style="height: 46px; padding: 0 16px; border-radius: 14px; background: {{accent}}; color: #1a0b05; font-weight: 700; font-size: 15px; display: flex; align-items: center; flex-shrink: 0;">Finish</a>
+</header>
+
+<section aria-labelledby="ex1" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; align-items: flex-start; gap: 10px;">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 5px;">
+<h2 id="ex1" style="margin: 0; font-family: Archivo, sans-serif; font-size: 20px; font-weight: 700;">Bench Press</h2>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #9a9ca5;">Chest · Barbell<span style="padding: 3px 8px; border-radius: 999px; background: #22252e; color: #f2f1ee; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;">≈1RM 117 kg</span></div>
+</div>
+<button type="button" aria-label="Options for Bench Press: move or remove" style="width: 46px; height: 46px; border-radius: 14px; background: #1d2028; border: 1px solid #2c3039; color: #f2f1ee; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button>
+</div>
+<p style="margin: 0; padding: 10px 12px; border-radius: 12px; background: #101217; font-size: 13px; color: #9a9ca5;">Last time: <span style="color: #f2f1ee; font-variant-numeric: tabular-nums;">100 × 5, 100 × 5, 100 × 4</span></p>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<sc-for list="{{rows}}" as="row" hint-placeholder-count="4">
+<sc-if value="{{row.isCurrent}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 16px; background: #1b1e26; border: 2px solid {{accent}};">
+<div style="display: flex; align-items: center; gap: 10px;">
+<button type="button" onClick="{{row.cycle}}" aria-label="Set type: {{row.typeName}}. Tap to change" style="width: 44px; height: 44px; border-radius: 12px; border: 0; background: {{row.badgeBg}}; color: {{row.badgeFg}}; font-family: Archivo, sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; flex-shrink: 0;">{{row.label}}</button>
+<span style="font-weight: 600; font-size: 15px;">{{row.title}}</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Weight · kg</span>
+<div style="display: flex; align-items: center; justify-content: space-between; height: 54px; border-radius: 14px; background: #101217; border: 1px solid #2c3039;">
+<button type="button" onClick="{{row.decW}}" aria-label="Less weight" style="width: 46px; height: 52px; border: 0; background: none; color: #f2f1ee; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+<span style="font-family: Archivo, sans-serif; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">{{row.wText}}</span>
+<button type="button" onClick="{{row.incW}}" aria-label="More weight" style="width: 46px; height: 52px; border: 0; background: none; color: #f2f1ee; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Reps</span>
+<div style="display: flex; align-items: center; justify-content: space-between; height: 54px; border-radius: 14px; background: #101217; border: 1px solid #2c3039;">
+<button type="button" onClick="{{row.decR}}" aria-label="Fewer reps" style="width: 46px; height: 52px; border: 0; background: none; color: #f2f1ee; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+<span style="font-family: Archivo, sans-serif; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">{{row.r}}</span>
+<button type="button" onClick="{{row.incR}}" aria-label="More reps" style="width: 46px; height: 52px; border: 0; background: none; color: #f2f1ee; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+</div>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 8px;">
+<span style="width: 72px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: #9a9ca5; line-height: 1.2;">EFFORT<br>(RPE)</span>
+<div style="flex-grow: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;">
+<sc-for list="{{row.rpeOpts}}" as="opt" hint-placeholder-count="4">
+<button type="button" onClick="{{opt.pick}}" aria-pressed="{{opt.pressed}}" aria-label="RPE {{opt.v}}" style="height: 44px; border-radius: 12px; border: 1px solid #2c3039; background: {{opt.bg}}; color: {{opt.fg}}; font-family: Archivo, sans-serif; font-weight: 700; font-size: 15px; cursor: pointer;">{{opt.v}}</button>
+</sc-for>
+</div>
+</div>
+<button type="button" onClick="{{row.complete}}" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; border-radius: 14px; border: 0; background: {{accent}}; color: #1a0b05; font-weight: 700; font-size: 16px; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>Complete set</button>
+</div>
+</sc-if>
+<sc-if value="{{row.notCurrent}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 0 2px; opacity: {{row.opacity}};">
+<button type="button" onClick="{{row.cycle}}" aria-label="Set type: {{row.typeName}}. Tap to change" style="width: 44px; height: 44px; border-radius: 12px; border: 0; background: {{row.badgeBg}}; color: {{row.badgeFg}}; font-family: Archivo, sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; flex-shrink: 0;">{{row.label}}</button>
+<span style="flex-grow: 1; font-family: Archivo, sans-serif; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums;">{{row.summary}}</span>
+<span style="font-size: 13px; color: #9a9ca5;">{{row.rpeText}}</span>
+<button type="button" onClick="{{row.toggle}}" aria-label="{{row.toggleLabel}}" aria-pressed="{{row.pressed}}" style="width: 46px; height: 46px; border-radius: 23px; border: 2px solid {{row.checkBorder}}; background: {{row.checkBg}}; color: {{row.checkFg}}; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; flex-shrink: 0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button>
+</div>
+</sc-if>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+<button type="button" onClick="{{addSet}}" style="height: 46px; border-radius: 12px; background: #1d2028; border: 1px solid #2c3039; color: #f2f1ee; font-weight: 600; font-size: 14px; cursor: pointer;">+ Add set</button>
+<button type="button" onClick="{{addWarm}}" style="height: 46px; border-radius: 12px; background: #1d2028; border: 1px solid #2c3039; color: #f2f1ee; font-weight: 600; font-size: 14px; cursor: pointer;">+ Warm-up</button>
+<button type="button" style="height: 46px; border-radius: 12px; background: #1d2028; border: 1px solid #2c3039; color: #f2f1ee; font-weight: 600; font-size: 14px; cursor: pointer;">Note</button>
+</div>
+</section>
+
+<section aria-labelledby="ex2" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+<h2 id="ex2" style="margin: 0; font-family: Archivo, sans-serif; font-size: 17px; font-weight: 700;">Incline Dumbbell Press</h2>
+<p style="margin: 0; font-size: 13px; color: #9a9ca5;">Chest · Dumbbell · Last: 32 × 10</p>
+</div>
+<span style="font-size: 13px; font-weight: 600; color: #9a9ca5; font-variant-numeric: tabular-nums;">0 / 3</span>
+<button type="button" aria-label="Open Incline Dumbbell Press" style="width: 46px; height: 46px; border-radius: 14px; background: #1d2028; border: 1px solid #2c3039; color: #f2f1ee; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+</section>
+
+<section aria-labelledby="ex3" style="background: #14161c; border: 1px solid #22252e; border-radius: 18px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+<h2 id="ex3" style="margin: 0; font-family: Archivo, sans-serif; font-size: 17px; font-weight: 700;">Triceps Pushdown</h2>
+<p style="margin: 0; font-size: 13px; color: #9a9ca5;">Triceps · Cable · Last: 25 × 12</p>
+</div>
+<span style="font-size: 13px; font-weight: 600; color: #9a9ca5; font-variant-numeric: tabular-nums;">0 / 3</span>
+<button type="button" aria-label="Open Triceps Pushdown" style="width: 46px; height: 46px; border-radius: 14px; background: #1d2028; border: 1px solid #2c3039; color: #f2f1ee; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+</section>
+
+<button type="button" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; border-radius: 14px; background: #1d2028; border: 1px dashed #3a3e49; color: #f2f1ee; font-weight: 600; font-size: 16px; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add exercise</button>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+<button type="button" style="height: 46px; border-radius: 12px; background: none; border: 1px solid #2c3039; color: #f2f1ee; font-weight: 600; font-size: 14px; cursor: pointer;">Save as routine</button>
+<button type="button" style="height: 46px; border-radius: 12px; background: none; border: 1px solid #4a2326; color: #ff7a7e; font-weight: 600; font-size: 14px; cursor: pointer;">Discard workout</button>
+</div>
+</main>
+
+<sc-if value="{{showRest}}" hint-placeholder-val="{{true}}">
+<section aria-label="Rest timer" style="position: absolute; left: 12px; bottom: 98px; width: 366px; box-sizing: border-box; padding: 10px; border-radius: 20px; background: #1b1e26; border: 1px solid #2c3039; box-shadow: 0 12px 32px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px;">
+<button type="button" onClick="{{restMinus}}" aria-label="15 seconds less" style="height: 46px; padding: 0 10px; border-radius: 12px; background: #22252e; border: 0; color: #f2f1ee; font-weight: 600; font-size: 14px; cursor: pointer;">−15s</button>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px; align-items: center;">
+<div style="display: flex; align-items: baseline; gap: 8px;"><span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9a9ca5;">Rest</span><span style="font-family: Archivo, sans-serif; font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums;">{{restText}}</span></div>
+<div style="width: 100%; height: 6px; border-radius: 3px; background: #2c3039; overflow: hidden;"><div style="height: 6px; width: {{restPct}}; border-radius: 3px; background: {{accent}};"></div></div>
+</div>
+<button type="button" onClick="{{restPlus}}" aria-label="15 seconds more" style="height: 46px; padding: 0 10px; border-radius: 12px; background: #22252e; border: 0; color: #f2f1ee; font-weight: 600; font-size: 14px; cursor: pointer;">+15s</button>
+<button type="button" onClick="{{restSkip}}" style="height: 46px; padding: 0 14px; border-radius: 12px; background: {{accent}}; border: 0; color: #1a0b05; font-weight: 700; font-size: 14px; cursor: pointer;">Skip</button>
+</section>
+</sc-if>
+
+<nav aria-label="Main" style="position: absolute; left: 0; bottom: 0; width: 390px; height: 88px; box-sizing: border-box; padding: 8px 6px 28px; background: #0e0f14; border-top: 1px solid #22252e; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));">
+<a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l2.5 2.5"></path></svg></span>Today</a>
+<a href="Train.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #f2f1ee;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: {{accent}}; color: #1a0b05;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"></path></svg></span>Train</a>
+<a href="Fuel.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v7a2 2 0 0 0 4 0V3M9 12v9M16 21V3c2.2 0 3.5 2.5 3.5 6s-1.3 4-3.5 4"></path></svg></span>Fuel</a>
+<a href="Progress.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M5 16l4-5 3.5 3L19 6"></path></svg></span>Progress</a>
+<a href="More.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: #8d909a;"><span style="width: 54px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"></rect><rect x="14" y="4" width="6" height="6" rx="1.5"></rect><rect x="4" y="14" width="6" height="6" rx="1.5"></rect><rect x="14" y="14" width="6" height="6" rx="1.5"></rect></svg></span>More</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#ff6a3d","options":["#ff6a3d","#4f9dff","#3ecf8e","#b58cff"]},"$preview":{"width":390,"height":1360}}'>
+class Component extends DCLogic {
+  getSets() {
+    const s = this.state || {};
+    return s.sets || [
+      { type: 'W', w: 60, r: 10, rpe: null, done: true },
+      { type: 'N', w: 100, r: 5, rpe: 8, done: true },
+      { type: 'N', w: 100, r: 5, rpe: null, done: false },
+      { type: 'N', w: 100, r: 5, rpe: null, done: false }
+    ];
+  }
+  componentDidMount() {
+    this.tick = setInterval(() => {
+      const s = this.state || {};
+      const rest = s.rest != null ? s.rest : 84;
+      const el = (s.elapsed != null ? s.elapsed : 1453) + 1;
+      this.setState({ elapsed: el, rest: rest > 0 ? rest - 1 : 0 });
+    }, 1000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.tick);
+  }
+  update(i, patch) {
+    const sets = this.getSets().map((x, j) => (j === i ? Object.assign({}, x, patch) : x));
+    this.setState({ sets: sets });
+  }
+  renderVals() {
+    const s = this.state || {};
+    const accent = this.props.accent ?? '#ff6a3d';
+    const sets = this.getSets();
+    const cur = sets.findIndex((x) => !x.done);
+    const rest = s.rest != null ? s.rest : 84;
+    const restTotal = s.restTotal || 90;
+    const elapsed = s.elapsed != null ? s.elapsed : 1453;
+    const fmt = (t) => Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+    const kg = (w) => (Number.isInteger(w) ? String(w) : w.toFixed(1));
+    const order = ['N', 'W', 'D', 'F'];
+    const names = { N: 'working set', W: 'warm-up', D: 'drop set', F: 'to failure' };
+    const colors = {
+      N: ['#262a33', '#f2f1ee'],
+      W: ['rgba(245,197,66,0.16)', '#f5c542'],
+      D: ['rgba(92,184,255,0.16)', '#5cb8ff'],
+      F: ['rgba(255,90,95,0.16)', '#ff7a7e']
+    };
+    let n = 0;
+    const rows = sets.map((x, i) => {
+      const label = x.type === 'N' ? String(++n) : x.type;
+      const isCurrent = i === cur;
+      const title = x.type === 'N' ? 'Set ' + label + ' · up next' : names[x.type].charAt(0).toUpperCase() + names[x.type].slice(1) + ' · up next';
+      return {
+        label: label,
+        typeName: names[x.type],
+        title: title,
+        isCurrent: isCurrent,
+        notCurrent: !isCurrent,
+        opacity: x.done ? 1 : 0.5,
+        badgeBg: colors[x.type][0],
+        badgeFg: colors[x.type][1],
+        summary: kg(x.w) + ' kg × ' + x.r,
+        wText: kg(x.w),
+        r: x.r,
+        rpeText: x.rpe ? 'RPE ' + x.rpe : '',
+        pressed: x.done ? 'true' : 'false',
+        toggleLabel: x.done ? 'Set ' + label + ' done. Tap to undo' : 'Mark set ' + label + ' done',
+        checkBorder: x.done ? '#3ecf8e' : '#3a3e49',
+        checkBg: x.done ? 'rgba(62,207,142,0.16)' : 'transparent',
+        checkFg: x.done ? '#3ecf8e' : '#5a5e69',
+        cycle: () => this.update(i, { type: order[(order.indexOf(x.type) + 1) % 4] }),
+        toggle: () => this.update(i, { done: !x.done }),
+        decW: () => this.update(i, { w: Math.max(0, x.w - 2.5) }),
+        incW: () => this.update(i, { w: x.w + 2.5 }),
+        decR: () => this.update(i, { r: Math.max(0, x.r - 1) }),
+        incR: () => this.update(i, { r: x.r + 1 }),
+        rpeOpts: [7, 8, 9, 10].map((v) => ({
+          v: v,
+          pressed: x.rpe === v ? 'true' : 'false',
+          bg: x.rpe === v ? accent : '#22252e',
+          fg: x.rpe === v ? '#1a0b05' : '#f2f1ee',
+          pick: () => this.update(i, { rpe: x.rpe === v ? null : v })
+        })),
+        complete: () => {
+          this.update(i, { done: true });
+          this.setState({ rest: 90, restTotal: 90 });
+        }
+      };
+    });
+    const last = sets[sets.length - 1];
+    const doneCount = sets.filter((x) => x.done).length;
+    return {
+      accent: accent,
+      rows: rows,
+      doneCount: doneCount,
+      totalSets: sets.length + 6,
+      elapsedText: fmt(elapsed) + ' elapsed',
+      showRest: rest > 0,
+      restText: fmt(rest),
+      restPct: Math.round((rest / restTotal) * 100) + '%',
+      restMinus: () => this.setState({ rest: Math.max(0, rest - 15) }),
+      restPlus: () => this.setState({ rest: rest + 15, restTotal: Math.max(restTotal, rest + 15) }),
+      restSkip: () => this.setState({ rest: 0 }),
+      addSet: () => this.setState({ sets: sets.concat([{ type: 'N', w: last.w, r: last.r, rpe: null, done: false }]) }),
+      addWarm: () => this.setState({ sets: [{ type: 'W', w: Math.round(last.w / 5) * 2.5, r: 10, rpe: null, done: false }].concat(sets) })
+    };
+  }
+}
+</script>
+</body>
+</html>

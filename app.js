@@ -86,7 +86,7 @@
       <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--border)" stroke-width="12"/>
       <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round"
         stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 70 70)"/>
-      <text x="70" y="68" text-anchor="middle" font-size="26" fill="var(--text)" font-weight="700">${big}</text>
+      <text x="70" y="68" text-anchor="middle" font-family="Archivo, sans-serif" font-size="28" fill="var(--text)" font-weight="800">${big}</text>
       <text x="70" y="90" text-anchor="middle" font-size="11" fill="var(--muted)">${sub}</text>
     </svg>`;
   }
@@ -119,9 +119,9 @@
       <p class="muted" style="font-size:13px;text-align:center;margin:6px 0 0">Net ${kcal - burned} kcal</p>
     </div>`;
     h += `<div class="card"><h2>Macros</h2>
-      ${macroBar("Protein", macros.p, g.protein, "#3b82f6")}
-      ${macroBar("Carbs", macros.c, g.carbs, "#f5c451")}
-      ${macroBar("Fat", macros.f, g.fat, "#ff5a3c")}</div>`;
+      ${macroBar("Protein", macros.p, g.protein, "var(--macro-p)")}
+      ${macroBar("Carbs", macros.c, g.carbs, "var(--macro-c)")}
+      ${macroBar("Fat", macros.f, g.fat, "var(--macro-f)")}</div>`;
     h += `<div class="card"><div class="row between"><h2>Water</h2><strong>${water} / ${g.water}</strong></div>
       <div class="row" style="margin-top:6px">
         <button class="btn-sm" data-action="water-minus" aria-label="less water">−</button>
@@ -644,7 +644,7 @@
       el.addEventListener("change", () => Store.setGoal(el.dataset.goal, el.value)));
   }
 
-  const ACCENTS = ["#ff6a3d", "#4f8cff", "#34d399", "#a855f7", "#ec4899", "#f5c451"];
+  const ACCENTS = ["#ff6a3d", "#4f9dff", "#3ecf8e", "#b58cff", "#ff6fae", "#f5c542"];
   function applyTheme() {
     const s = Store.settings();
     document.documentElement.dataset.theme = s.theme || "dark";
