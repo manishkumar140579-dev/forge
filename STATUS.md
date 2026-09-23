@@ -21,10 +21,11 @@ Clean-room build inspired by the GPL app "Iron" — **no GPL code is used**, so 
 - **Medication:** daily checklist on Today (tick off per day) + Manage modal (add name/dose, delete).
 - **Steps:** Today card with goal progress + Settings goal. Manual entry for now; `Store.setSteps(date, n)` is the hook the Health integration will call.
 
-## 📱 Native app (Capacitor) — in progress
-- **Phase 1 scaffold done:** `capacitor.config.json`, `scripts/sync-www.mjs` (root → `www/`), `package.json` deps, and the generated Android project. See **`MOBILE.md`** for the full roadmap + build steps.
-- **To build the APK (your machine):** install **JDK 17** (env here has Java 8) + **Android Studio**, then `npm install && npm run cap:add:android && npm run cap:open:android`.
-- **Phase 2 (steps from Health) — web seam done:** `health.js` + Settings → Steps & Health → Connect; auto-syncs on launch/resume via `Store.setSteps()`. Remaining: install a native Health Connect / HealthKit plugin + permissions (needs device + SDK). See `MOBILE.md`.
+## 📱 Native app (Capacitor) — building
+- **Phase 1 + 2 done and verified:** the PWA is wrapped by Capacitor 8; **a debug APK builds** (`android/app/build/outputs/apk/debug/app-debug.apk`, ~6 MB) with the **`capacitor-health`** plugin compiled in.
+- **Toolchain (installed on this machine):** JDK 21 (Capacitor 8 needs 21, not 17), Android SDK (cmdline-tools + android-36 + build-tools 36). Android Studio installing.
+- **Steps from Health:** `health.js` → Health Connect / HealthKit → `Store.setSteps()`; Settings → Steps & Health → Connect. `scripts/patch-android.mjs` re-applies minSdk 26 + the Health Connect manifest entries after any `cap:add`/`cap:sync`.
+- **Remaining for Phase 2:** test on a physical device (needs the Google Health Connect app) + a privacy policy for store submission. See **`MOBILE.md`**.
 
 ## ⏳ Pending — needs money / infrastructure (not built)
 - **Cloud sync / multi-device accounts** — needs a hosted backend (free tier: Supabase or Firebase).

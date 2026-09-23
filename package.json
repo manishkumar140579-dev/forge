@@ -6,15 +6,17 @@
   "scripts": {
     "test": "node calc.test.js",
     "sync-www": "node scripts/sync-www.mjs",
-    "cap:add:android": "npm run sync-www && npx cap add android",
+    "patch:android": "node scripts/patch-android.mjs",
+    "cap:add:android": "npm run sync-www && npx cap add android && npm run patch:android",
     "cap:add:ios": "npm run sync-www && npx cap add ios",
-    "cap:sync": "npm run sync-www && npx cap sync",
+    "cap:sync": "npm run sync-www && npx cap sync && npm run patch:android",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
     "@capacitor/cli": "^8.5.2",
-    "@capacitor/core": "^8.5.2"
+    "@capacitor/core": "^8.5.2",
+    "capacitor-health": "^8.4.0"
   }
 }
